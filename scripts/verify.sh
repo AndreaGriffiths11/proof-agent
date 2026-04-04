@@ -15,8 +15,8 @@ FILES=$(git diff --name-only "$BASE" HEAD 2>/dev/null || git diff --name-only --
 # Count
 FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
 
-# Get diff summary
-DIFF=$(git diff --stat "$BASE" HEAD 2>/dev/null || echo "(no diff available)")
+# Get diff output (full unified diff with context)
+DIFF=$(git diff "$BASE" HEAD 2>/dev/null || echo "(no diff available)")
 
 # Get commit messages since base
 COMMITS=$(git log --oneline "$BASE"..HEAD 2>/dev/null || echo "(no commits)")
@@ -36,50 +36,23 @@ if [ "$SHOULD_VERIFY" = false ]; then
   exit 0
 fi
 
-# Build the prompt
-cat <<EOF
-VERIFICATION REQUEST
+# Build the prompt using the Python function (single source of truth)
+python3 -c "
+from proof_agent.verifier import build_verification_prompt, VerificationRequest
+import sys
 
-## Files Changed ($FILE_COUNT files)
-$FILES
+files_changed = '''$FILES'''.strip().split('\n')
+diff_text = '''$DIFF'''
+commits = '''$COMMITS'''
 
-## Diff Summary
-$DIFF
+# Build request
+request = VerificationRequest(
+    original_request=f'''Code changes across {len(files_changed)} file(s):\n{commits}''',
+    files_changed=files_changed,
+    approach=f'''Changes made via git commits.\n\nDiff output:\n{diff_text}''',
+    attempt=1,
+    previous_failures=[]
+)
 
-## Commits
-$COMMITS
-
-## Sensitive Files Detected
-$(python3 -c "
-from proof_agent.config import ProofConfig
-config = ProofConfig()
-files = '''$FILES'''.strip().split('\n')
-sensitive = [f for f in files if config.matches_always_verify(f)]
-print('\n'.join(sensitive) if sensitive else 'None')
-")
-
-## Your Job
-
-You are an independent verifier. The worker who made these changes CANNOT verify their own work — only you can assign a verdict.
-
-### Review Checklist
-1. Correctness: Does the code actually do what was requested?
-2. Bugs & Edge Cases: Regressions, unhandled errors, missed cases?
-3. Security: Vulnerabilities, exposed secrets, permission issues?
-4. Build: Does it build/compile/lint cleanly?
-5. Facts: Are any claims, version numbers, or URLs verifiable? Check them.
-
-### Rules
-- For EVERY check, include the actual command you ran and its output
-- Do NOT take the worker's word for anything
-- Do NOT give PASS without running at least 3 verification commands
-- You have NO information about the worker's test results — verify independently
-
-## Verdict
-
-Assign EXACTLY ONE:
-
-PASS — All checks passed. Every claim backed by command output.
-FAIL — Issues found. List each: file, line, what's wrong, severity (critical/major/minor).
-PARTIAL — Some passed, some unverifiable. List both with evidence.
-EOF
+print(build_verification_prompt(request))
+"
