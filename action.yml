@@ -1,4 +1,4 @@
-name: 'Proof Agent'
+name: 'proof-agent-verify'
 description: 'Adversarial verification for AI-generated code using GitHub Copilot'
 author: 'Andrea Griffiths'
 
