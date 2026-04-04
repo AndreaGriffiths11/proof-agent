@@ -47,52 +47,41 @@ The verifier has no access to the worker's self-assessment. It must verify with 
 
 ### GitHub Action (Zero Setup)
 
-1. Create a Fine-Grained Personal Access Token:
-   - **[Create token here](https://github.com/settings/personal-access-tokens/new)**
-   - **Repository permissions:**
-     - Pull requests: Read and write
-     - Contents: Read
-     - Issues: Read and write
-   - **Account permissions:**
-     - Copilot Requests: Read and write
+Add this workflow to your repo:
 
-2. Add token as repository secret:
-   ```bash
-   gh secret set COPILOT_TOKEN --body "YOUR_TOKEN_HERE" --repo OWNER/REPO
-   ```
+**`.github/workflows/proof-agent.yml`:**
+```yaml
+name: Proof Agent
 
-3. Create `.github/workflows/proof-agent.yml`:
-   ```yaml
-   name: Proof Agent
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
-   on:
-     pull_request:
-       types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: write
+  models: read  # Required for GitHub Models API
 
-   permissions:
-     contents: read
-     pull-requests: write
-
-   jobs:
-     verify:
-       runs-on: ubuntu-latest
-       
-       steps:
-         - uses: actions/checkout@v4
-           with:
-             fetch-depth: 0
-         
-         - uses: AndreaGriffiths11/proof-agent@main
-           with:
-             github-token: ${{ secrets.COPILOT_TOKEN }}
-             base-ref: origin/main
-             block-on-fail: true
-             post-comment: true
-   ```
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - uses: AndreaGriffiths11/proof-agent@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-ref: origin/main
+          block-on-fail: true
+          post-comment: true
+```
 
 That's it. Every PR gets automatic verification.
 
-**Uses your GitHub Copilot license.** No extra API costs.
+**Uses GitHub Models API (free tier).** No API keys or tokens needed.
 
 ---
 
@@ -132,8 +121,8 @@ cat verification_prompt.txt | your-llm-cli
 ```yaml
 - uses: AndreaGriffiths11/proof-agent@main
   with:
-    # Token with Copilot + repo access
-    github-token: ${{ secrets.COPILOT_TOKEN }}
+    # GitHub token (use built-in GITHUB_TOKEN)
+    github-token: ${{ secrets.GITHUB_TOKEN }}
     
     # Git ref to compare against
     base-ref: origin/main
@@ -221,34 +210,33 @@ retry:
 
 ## Troubleshooting
 
-### Action fails with "Authentication failed"
+### Action fails with "No access to model"
 
-**Check token permissions:**
-- [Your Personal Access Tokens](https://github.com/settings/tokens)
-- Edit your token
-- Ensure **Copilot Requests** is set to **Read and write**
-
-**Verify token is set:**
-```bash
-gh secret list --repo OWNER/REPO
+**Check workflow permissions:**
+```yaml
+permissions:
+  contents: read
+  pull-requests: write
+  models: read  # ← Required for GitHub Models API
 ```
 
-**Regenerate if expired:**
-- [Create new Fine-Grained PAT](https://github.com/settings/personal-access-tokens/new)
-- Update secret: `gh secret set COPILOT_TOKEN --body "NEW_TOKEN"`
+**Verify GitHub Models is enabled:**
+- Go to https://github.com/marketplace?type=models
+- Confirm you can access models (free tier available)
 
 ---
 
-### PR comment not posted (404 error)
+### PR comment not posted (403/404 error)
 
-Token needs `repo` scope for private repos or `pull-requests: write` for public repos.
+**Check workflow permissions:**
+```yaml
+permissions:
+  pull-requests: write  # ← Required for posting comments
+  contents: read
+  models: read
+```
 
-**Fine-Grained PAT:**
-- Repository permissions → Pull requests: Read and write
-- Repository permissions → Issues: Read and write
-
-**Classic PAT:**
-- Scope: `repo`
+For private repos, use `secrets.GITHUB_TOKEN` (already has correct permissions).
 
 ---
 
