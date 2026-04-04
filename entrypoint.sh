@@ -92,15 +92,18 @@ if [ "$MODELS_FAILED" != "true" ]; then
     echo ""
     
     COPILOT_EXIT=0
+    # Capture both stdout and stderr to see what's failing
     VERDICT=$(echo "$PROMPT_CONTENT" | gh models run "$COPILOT_MODEL" 2>&1) || COPILOT_EXIT=$?
     
     if [ "$COPILOT_EXIT" -ne 0 ]; then
         echo "⚠️ gh models run failed (exit $COPILOT_EXIT)"
+        echo "Error output:"
+        echo "$VERDICT"
         echo ""
         echo "Falling back to manual review mode — prompt saved to verification_prompt.txt"
         echo "Review the prompt manually and assign a verdict."
         echo ""
-        VERDICT="### PARTIAL\nAPI call failed. Manual review required.\nSee verification_prompt.txt for the full prompt."
+        VERDICT="### PARTIAL\ngh models run failed (exit $COPILOT_EXIT).\nError: $VERDICT\n\nSee verification_prompt.txt for the full prompt."
         VERDICT=$(printf '%b' "$VERDICT")
     fi
 fi
