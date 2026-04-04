@@ -1,4 +1,4 @@
-lo lo lo# Proof Agent
+# Proof Agent
 
 **Adversarial verification for AI-generated work.**
 
