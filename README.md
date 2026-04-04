@@ -1,4 +1,4 @@
-# Proof Agent
+lo lo lo# Proof Agent
 
 **Adversarial verification for AI-generated work.**
 
@@ -278,14 +278,6 @@ Proof Agent skips if <3 files changed AND no sensitive files detected.
 - Code review (separate developer)
 - Security audit (external team)
 - Peer review (different researcher)
-
----
-
-## Support
-
-- [GitHub Issues](https://github.com/AndreaGriffiths11/proof-agent/issues)
-- [GitHub Discussions](https://github.com/AndreaGriffiths11/proof-agent/discussions)
-- [@acolombiadev](https://x.com/acolombiadev)
 
 ---
 
