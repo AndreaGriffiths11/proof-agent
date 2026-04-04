@@ -63,45 +63,46 @@ fi
 
 echo ""
 
-# NOTE: `gh copilot` is an interactive CLI — it does NOT accept stdin pipes
-# and has no non-interactive/batch mode. Piping to it will fail or hang in CI.
-#
-# Approach: We use the GitHub Models API via `gh api` as a non-interactive
-# alternative. If GH_COPILOT_MODEL is not set, we fall back to writing the
-# prompt to an artifact for manual review.
-#
-# To use a different model endpoint, set PROOF_AGENT_API_URL and
-# PROOF_AGENT_API_MODEL environment variables.
+# Install gh-models extension if not already installed
+# The gh-models extension provides `gh models run` for GitHub Actions
+if ! gh extension list 2>/dev/null | grep -q "gh-models"; then
+    echo "Installing gh-models extension..."
+    gh extension install https://github.com/github/gh-models 2>&1 || {
+        echo "⚠️ Failed to install gh-models extension"
+        echo "Falling back to manual review mode"
+        VERDICT="### PARTIAL\ngh-models extension installation failed. Manual review required.\nSee verification_prompt.txt for the full prompt."
+        VERDICT=$(printf '%b' "$VERDICT")
+        echo "$VERDICT" > verdict.txt
+        echo "$VERDICT"
+        echo ""
+        VERDICT_TYPE="PARTIAL"
+        echo "⚠️ Verification: PARTIAL"
+        
+        # Skip to end (after verdict parsing)
+        MODELS_FAILED=true
+    }
+fi
 
-COPILOT_MODEL="${GH_COPILOT_MODEL:-openai/gpt-4o}"
-API_URL="${PROOF_AGENT_API_URL:-https://models.github.ai/inference/chat/completions}"
-
-echo "📝 Sending verification prompt via GitHub Models API (model: $COPILOT_MODEL)..."
-echo ""
-
-PAYLOAD=$(jq -n --arg model "$COPILOT_MODEL" --arg content "$PROMPT_CONTENT" \
-  '{model: $model, messages: [{role: "user", content: $content}]}')
-
-COPILOT_EXIT=0
-RESPONSE=$(curl -s -w "\n%{http_code}" \
-  -H "Authorization: Bearer ${INPUT_GITHUB_TOKEN}" \
-  -H "Content-Type: application/json" \
-  "$API_URL" \
-  -d "$PAYLOAD") || COPILOT_EXIT=$?
-
-HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-BODY=$(echo "$RESPONSE" | sed '$d')
-
-if [ "$COPILOT_EXIT" -ne 0 ] || [ "$HTTP_CODE" -ge 400 ]; then
-    echo "⚠️ API call failed (HTTP $HTTP_CODE, exit $COPILOT_EXIT)"
+if [ "$MODELS_FAILED" != "true" ]; then
+    # Use GitHub Models via gh models run
+    # Using ai-21/jamba-3-turbo (fast, good reasoning, free tier)
+    COPILOT_MODEL="${GH_COPILOT_MODEL:-ai-21/jamba-3-turbo}"
+    
+    echo "📝 Sending verification prompt via GitHub Models ($COPILOT_MODEL)..."
     echo ""
-    echo "Falling back to manual review mode — prompt saved to verification_prompt.txt"
-    echo "Review the prompt manually and assign a verdict."
-    echo ""
-    VERDICT="### PARTIAL\nAPI call failed. Manual review required.\nSee verification_prompt.txt for the full prompt."
-    VERDICT=$(printf '%b' "$VERDICT")
-else
-    VERDICT=$(echo "$BODY" | jq -r '.choices[0].message.content // "No content in response"')
+    
+    COPILOT_EXIT=0
+    VERDICT=$(echo "$PROMPT_CONTENT" | gh models run "$COPILOT_MODEL" 2>&1) || COPILOT_EXIT=$?
+    
+    if [ "$COPILOT_EXIT" -ne 0 ]; then
+        echo "⚠️ gh models run failed (exit $COPILOT_EXIT)"
+        echo ""
+        echo "Falling back to manual review mode — prompt saved to verification_prompt.txt"
+        echo "Review the prompt manually and assign a verdict."
+        echo ""
+        VERDICT="### PARTIAL\nAPI call failed. Manual review required.\nSee verification_prompt.txt for the full prompt."
+        VERDICT=$(printf '%b' "$VERDICT")
+    fi
 fi
 
 # Save full verdict
