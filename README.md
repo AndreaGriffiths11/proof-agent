@@ -1,5 +1,8 @@
 # Proof Agent
 
+[![GitHub release](https://img.shields.io/github/v/release/AndreaGriffiths11/proof-agent)](https://github.com/AndreaGriffiths11/proof-agent/releases)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Proof%20Agent-blue.svg?colorA=24292e&colorB=0366d6&style=flat&longCache=true&logo=github)](https://github.com/marketplace/actions/proof-agent-verify)
+
 **Adversarial verification for AI-generated work.**
 
 The worker and the verifier are always separate agents. Self-verification is not verification.
