@@ -13,7 +13,11 @@ BASE="${1:-HEAD~1}"
 FILES=$(git diff --name-only "$BASE" HEAD 2>/dev/null || git diff --name-only --cached 2>/dev/null || echo "(no git changes detected)")
 
 # Count
-FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
+if [ -z "$FILES" ]; then
+  FILE_COUNT=0
+else
+  FILE_COUNT=$(printf '%s\n' "$FILES" | grep -c '.')
+fi
 
 # Get diff output (full unified diff with context)
 DIFF=$(git diff "$BASE" HEAD 2>/dev/null || echo "(no diff available)")
@@ -22,10 +26,9 @@ DIFF=$(git diff "$BASE" HEAD 2>/dev/null || echo "(no diff available)")
 COMMITS=$(git log --oneline "$BASE"..HEAD 2>/dev/null || echo "(no commits)")
 
 # Determine if verification is needed using the Python package (single source of truth)
-# Use stdin to avoid shell injection from filenames
-SHOULD_VERIFY=$(echo "$FILES" | python3 -c "
+# Pipe files over stdin to avoid shell injection from filenames.
+SHOULD_VERIFY=$(printf '%s\n' "$FILES" | python3 -c "
 import sys
-import json
 from proof_agent.verifier import should_verify
 
 files = [line.strip() for line in sys.stdin if line.strip()]
@@ -38,23 +41,10 @@ if [ "$SHOULD_VERIFY" = false ]; then
   exit 0
 fi
 
-# Build the prompt using the Python function (single source of truth)
-python3 -c "
-from proof_agent.verifier import build_verification_prompt, VerificationRequest
-import sys
-
-files_changed = '''$FILES'''.strip().split('\n')
-diff_text = '''$DIFF'''
-commits = '''$COMMITS'''
-
-# Build request
-request = VerificationRequest(
-    original_request=f'''Code changes across {len(files_changed)} file(s):\n{commits}''',
-    files_changed=files_changed,
-    approach=f'''Changes made via git commits.\n\nDiff output:\n{diff_text}''',
-    attempt=1,
-    previous_failures=[]
-)
-
-print(build_verification_prompt(request))
-"
+# Build the prompt via the CLI, passing data through environment variables so
+# arbitrary diff contents (including triple quotes, backslashes, ${...}, etc.)
+# cannot break the Python parser or inject code.
+PROOF_FILES="$FILES" \
+PROOF_DIFF="$DIFF" \
+PROOF_COMMITS="$COMMITS" \
+  proof-agent-build-prompt
