@@ -113,13 +113,8 @@ echo "$VERDICT" > verdict.txt
 echo "$VERDICT"
 echo ""
 
-# Parse verdict using the Python package (single source of truth)
-VERDICT_TYPE=$(python3 -c "
-from proof_agent.verifier import parse_verdict
-import sys
-result = parse_verdict(sys.stdin.read())
-print(result.verdict.value.upper())
-" <<< "$VERDICT")
+# Parse verdict using the Python CLI (single source of truth)
+VERDICT_TYPE=$(echo "$VERDICT" | proof-agent-parse-verdict)
 
 case "$VERDICT_TYPE" in
     PASS)    echo "✅ Verification: PASS" ;;
