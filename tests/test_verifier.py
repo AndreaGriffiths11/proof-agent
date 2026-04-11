@@ -69,6 +69,23 @@ class TestParseVerdict:
         result = parse_verdict(text)
         assert len(result.issues) == 2
 
+    def test_prompt_echo_false_fail(self):
+        """Regression: Verifier echoes prompt example, uses LAST verdict."""
+        text = """Here's an example of a FAIL verdict:
+
+### FAIL
+Critical issues found.
+
+But actually, the code is fine:
+
+### PASS
+No security issues found.
+Code is safe to merge.
+"""
+        result = parse_verdict(text)
+        # Should use LAST occurrence (PASS), not first (FAIL from example)
+        assert result.verdict == Verdict.PASS
+
 
 # --- ProofConfig.load ---
 

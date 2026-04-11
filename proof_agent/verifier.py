@@ -168,16 +168,21 @@ def parse_verdict(response: str) -> VerificationResult:
     """Parse a verifier's response into a structured result.
 
     Looks for verdict keywords and extracts issues/evidence.
+    Uses LAST occurrence of verdict to avoid prompt-echo false positives.
     """
     response_lower = response.lower()
 
-    # Determine verdict — anchor to structured format only
-    if "### fail" in response_lower:
-        verdict = Verdict.FAIL
-    elif "### partial" in response_lower:
-        verdict = Verdict.PARTIAL
-    elif "### pass" in response_lower:
-        verdict = Verdict.PASS
+    # Find ALL verdict headings, use the LAST one (avoid prompt-echo)
+    verdict_positions = [
+        (response_lower.rfind("### fail"), Verdict.FAIL),
+        (response_lower.rfind("### partial"), Verdict.PARTIAL),
+        (response_lower.rfind("### pass"), Verdict.PASS),
+    ]
+    
+    # Filter out -1 (not found), sort by position, take last
+    found = [(pos, v) for pos, v in verdict_positions if pos != -1]
+    if found:
+        verdict = max(found, key=lambda x: x[0])[1]
     else:
         # If no structured heading found, default to PARTIAL (safe)
         verdict = Verdict.PARTIAL

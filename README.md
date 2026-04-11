@@ -36,13 +36,14 @@ The verifier has no access to the worker's self-assessment. It must verify with 
 
 ## What It Checks
 
-- **Correctness** — Does the code do what was requested?
-- **Bugs & Edge Cases** — Regressions, unhandled errors, missed cases?
-- **Security** — Vulnerabilities, exposed secrets, permission issues?
-- **Build** — Does it build/compile/lint cleanly?
-- **Facts** — Are claims, version numbers, URLs verifiable?
+- **Security Vulnerabilities** — SQL injection, hardcoded secrets, authentication bypasses, XSS/CSRF
+- **Correctness** — Does the code match the stated purpose? Logical errors?
+- **Code Quality** — Bugs, error handling, race conditions, edge cases
+- **Static Analysis** — Reviews code changes directly from git diff
 
-**Rule:** No PASS without ≥3 verification commands with evidence.
+**Review method:** Static code review (reads diff output, does NOT execute code or run tests)
+
+**Rule:** Verifier must cite specific files, line numbers, and code snippets in verdict.
 
 ---
 
@@ -194,20 +195,19 @@ retry:
 2. **Proof Agent** detects: 3+ files changed + `*auth*` pattern → triggers verification
 3. **Verifier agent** spawns, receives:
    - Original request
-   - Files changed
-   - Approach taken
-4. **Verifier runs:**
-   ```bash
-   python -m pytest tests/test_auth.py -v
-   grep -r "secret\|password\|token" src/auth.py
-   pip install -r requirements.txt --dry-run
-   ```
+   - Files changed (list)
+   - Approach taken (git diff output)
+4. **Verifier reviews the code changes:**
+   - Scans `src/auth.py` for hardcoded secrets, SQL injection, auth bypasses
+   - Checks `tests/test_auth.py` for edge case coverage
+   - Reviews `requirements.txt` for suspicious dependencies
 5. **Verifier finds:**
-   - Tests pass
-   - Hardcoded API key in `src/auth.py:42`
-   - Dependencies install cleanly
-6. **Verdict:** **FAIL** — Security issue (hardcoded secret)
-7. **Proof Agent** spawns worker to fix → re-verifies → **PASS**
+   - Hardcoded API key in `src/auth.py:42` (`API_KEY = "sk-1234...")
+   - SQL query uses string interpolation (injection risk)
+   - Missing input validation on username parameter
+6. **Verdict:** **FAIL** — Security issues (hardcoded secret + SQL injection + missing validation)
+7. **Proof Agent** posts comment, blocks merge
+8. **Developer fixes issues** → pushes new commit → **re-verifies** → **PASS**
 
 ---
 

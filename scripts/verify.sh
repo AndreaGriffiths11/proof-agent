@@ -22,13 +22,15 @@ DIFF=$(git diff "$BASE" HEAD 2>/dev/null || echo "(no diff available)")
 COMMITS=$(git log --oneline "$BASE"..HEAD 2>/dev/null || echo "(no commits)")
 
 # Determine if verification is needed using the Python package (single source of truth)
-FILES_JSON=$(echo "$FILES" | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))")
-SHOULD_VERIFY=$(python3 -c "
+# Use stdin to avoid shell injection from filenames
+SHOULD_VERIFY=$(echo "$FILES" | python3 -c "
+import sys
+import json
 from proof_agent.verifier import should_verify
-import json, sys
-files = json.loads(sys.argv[1])
+
+files = [line.strip() for line in sys.stdin if line.strip()]
 print('true' if should_verify(files) else 'false')
-" "$FILES_JSON")
+")
 
 if [ "$SHOULD_VERIFY" = false ]; then
   echo "SKIP: Only $FILE_COUNT file(s) changed, no sensitive files detected."
