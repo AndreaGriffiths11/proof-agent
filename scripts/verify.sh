@@ -27,17 +27,22 @@ COMMITS=$(git log --oneline "$BASE"..HEAD 2>/dev/null || echo "(no commits)")
 
 # Determine if verification is needed using the Python package (single source of truth)
 # Pipe files over stdin to avoid shell injection from filenames.
-SHOULD_VERIFY=$(printf '%s\n' "$FILES" | python3 -c "
+# Check for force flag first
+if [ "${INPUT_FORCE:-false}" = "true" ]; then
+  SHOULD_VERIFY="true"
+else
+  SHOULD_VERIFY=$(printf '%s\n' "$FILES" | python3 -c "
 import sys
 from proof_agent.verifier import should_verify
 
 files = [line.strip() for line in sys.stdin if line.strip()]
 print('true' if should_verify(files) else 'false')
 ")
+fi
 
 if [ "$SHOULD_VERIFY" = false ]; then
   echo "SKIP: Only $FILE_COUNT file(s) changed, no sensitive files detected."
-  echo "Use --force or run manually to verify anyway."
+  echo "Use force: true or run manually to verify anyway."
   exit 0
 fi
 
