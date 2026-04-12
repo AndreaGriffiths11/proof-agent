@@ -85,8 +85,8 @@ fi
 
 if [ "$MODELS_FAILED" != "true" ]; then
     # Use GitHub Models via gh models run
-    # Using openai/gpt-4o-mini (fast, cheap, good for code review)
-    COPILOT_MODEL="${GH_COPILOT_MODEL:-openai/gpt-4o-mini}"
+    # Using github/copilot (available to all GitHub accounts)
+    COPILOT_MODEL="${GH_COPILOT_MODEL:-github/copilot}"
     
     echo "📝 Sending verification prompt via GitHub Models ($COPILOT_MODEL)..."
     echo ""
