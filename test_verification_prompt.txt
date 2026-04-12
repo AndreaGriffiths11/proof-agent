@@ -1,0 +1,2 @@
+SKIP: Only 1 file(s) changed, no sensitive files detected.
+Use --force or run manually to verify anyway.
