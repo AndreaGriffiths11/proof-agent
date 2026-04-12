@@ -85,8 +85,8 @@ fi
 
 if [ "$MODELS_FAILED" != "true" ]; then
     # Use GitHub Models via gh models run
-    # Using microsoft/phi-4-mini-instruct (widely available, good for code review)
-    COPILOT_MODEL="${GH_COPILOT_MODEL:-microsoft/phi-4-mini-instruct}"
+    # Using meta/llama-3.3-70b-instruct (widely available, good performance)
+    COPILOT_MODEL="${GH_COPILOT_MODEL:-meta/llama-3.3-70b-instruct}"
     
     echo "📝 Sending verification prompt via GitHub Models ($COPILOT_MODEL)..."
     echo ""
