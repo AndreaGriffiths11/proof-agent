@@ -11,7 +11,7 @@ Proof Agent requires GitHub Models API access to run adversarial verification. D
    - **Permissions**:
      - `Contents`: Read
      - `Pull requests`: Write  
-     - `Models`: Read ← **This is critical for GitHub Models API**
+     - `Models`: Read — **This is critical for GitHub Models API**
 4. **Generate token** and copy it
 
 ## Step 2: Add Token as Repository Secret
@@ -44,7 +44,7 @@ jobs:
           fetch-depth: 0
       
       - name: Verify PR with Proof Agent
-        uses: AndreaGriffiths11/proof-agent@v1.0.6
+        uses: AndreaGriffiths11/proof-agent@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           models-token: ${{ secrets.GH_MODELS_TOKEN }}  # ← Add this line
