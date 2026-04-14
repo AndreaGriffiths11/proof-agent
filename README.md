@@ -138,7 +138,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PROOF_AGENT_PROVIDER_BASE_URL: http://localhost:11434/v1
-      PROOF_AGENT_MODEL: deepseek-coder-v2:16b
+      PROOF_AGENT_MODEL: deepseek-coder:6.7b  # Recommended: 7B+ for production
+      # Or: qwen2.5-coder:7b, gemma2:9b, codellama:13b
     steps:
       - uses: actions/checkout@v4
         with:
@@ -151,6 +152,8 @@ jobs:
 **Supported providers:** Anthropic, Azure OpenAI, OpenAI-compatible endpoints (OpenAI, Ollama, vLLM, etc.).
 
 **Cost optimization:** Use a different model for the verifier step with `PROOF_AGENT_VERIFIER_MODEL`.
+
+**⚠️ Model Requirements:** Security verification requires substantial model capability. **Minimum 2B parameters** for basic detection, **7B+ parameters recommended** for production use. Models under 2B parameters may produce false passes and miss critical security vulnerabilities.
 
 ---
 
