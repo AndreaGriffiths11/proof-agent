@@ -111,14 +111,9 @@ runs:
         INPUT_COMMENT_MODE: ${{ inputs.comment-mode }}
         INPUT_MAX_COMMENT_LENGTH: ${{ inputs.max-comment-length }}
         
-        # BYOK Environment Variables
-        PROOF_AGENT_PROVIDER_BASE_URL: ${{ inputs.provider-base-url }}
-        PROOF_AGENT_PROVIDER_TYPE: ${{ inputs.provider-type }}
-        PROOF_AGENT_PROVIDER_API_KEY: ${{ inputs.provider-api-key }}
-        PROOF_AGENT_PROVIDER_BEARER_TOKEN: ${{ inputs.provider-bearer-token }}
-        PROOF_AGENT_MODEL: ${{ inputs.model }}
-        PROOF_AGENT_VERIFIER_MODEL: ${{ inputs.verifier-model }}
-        PROOF_AGENT_PROVIDER_AZURE_API_VERSION: ${{ inputs.azure-api-version }}
+        # BYOK env vars inherit from job/step level - no override here
+        # Users set these via job-level env: or step-level env:
+        # PROOF_AGENT_PROVIDER_BASE_URL, PROOF_AGENT_PROVIDER_TYPE, etc.
         
         PR_NUMBER: ${{ github.event.pull_request.number }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
