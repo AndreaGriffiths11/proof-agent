@@ -10,14 +10,14 @@ from proof_agent.byok import BYOKClient
 def test_byok_client_requires_base_url():
     """BYOK client should require base URL"""
     with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError, match="PROOF_AGENT_PROVIDER_BASE_URL is required"):
+        with pytest.raises(ValueError, match="PROOF_AGENT_PROVIDER_BASE_URL is required for BYOK mode"):
             BYOKClient()
 
 
 def test_byok_client_requires_model():
     """BYOK client should require model"""
     with patch.dict(os.environ, {'PROOF_AGENT_PROVIDER_BASE_URL': 'http://test.com'}, clear=True):
-        with pytest.raises(ValueError, match="PROOF_AGENT_MODEL is required"):
+        with pytest.raises(ValueError, match="PROOF_AGENT_MODEL is required for BYOK mode"):
             BYOKClient()
 
 
