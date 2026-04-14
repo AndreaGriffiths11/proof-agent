@@ -1,6 +1,6 @@
 # Contributing to Proof Agent
 
-Thank you for your interest in contributing! This document explains how to set up your development environment, run tests, and submit changes.
+Thank you for your interest in contributing. This document explains how to set up your environment, run the current test suite, and submit changes.
 
 ---
 
@@ -26,58 +26,49 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### 3. Install in editable mode
+### 3. Install dependencies
 
 ```bash
-pip install -e .
-pip install -r requirements-dev.txt  # (coming soon: includes pytest, ruff, mypy)
+pip install -e ".[dev]"
 ```
 
 ---
 
 ## Project Structure
 
-```
+```text
 proof-agent/
 ├── proof_agent/          # Python package
 │   ├── __init__.py       # Package exports
+│   ├── byok.py           # BYOK provider client
+│   ├── cli.py            # CLI entry points
 │   ├── config.py         # Configuration loading
-│   └── verifier.py       # Core verification logic
-├── scripts/              # Shell scripts
-│   ├── verify.sh         # Git-based verification
-│   └── fact-check.sh     # URL/package validation
-├── tests/                # Unit tests (to be added)
-├── examples/             # Example workflows (to be added)
-├── LICENSE               # MIT License
+│   └── verifier.py       # Verification logic and prompt generation
+├── scripts/
+│   ├── verify.sh         # Prompt generation from git state
+│   └── fact-check.sh     # Optional URL/package/action validation
+├── tests/                # Pytest suite
+├── action.yml            # Composite GitHub Action
+├── entrypoint.sh         # Action runtime logic
 ├── README.md             # Main documentation
-├── SKILL.md              # AgentSkill specification
-└── pyproject.toml        # Package metadata
+├── SKILL.md              # Agent skill documentation
+└── pyproject.toml        # Package metadata and dependencies
 ```
 
 ---
 
 ## Running Tests
 
-(Coming soon — test suite in progress)
+The repository's automated validation is currently the pytest suite used in CI:
 
 ```bash
-pytest tests/
+pytest -v
 ```
 
----
-
-## Code Style
-
-We use:
-- **Ruff** for linting and formatting
-- **mypy** for type checking
-
-Before committing:
+CI installs dependencies with:
 
 ```bash
-ruff check .
-ruff format .
-mypy proof_agent/
+pip install ".[dev]"
 ```
 
 ---
@@ -92,16 +83,14 @@ git checkout -b feature/your-feature-name
 
 ### 2. Make your changes
 
-- Write clear, focused commits
-- Add tests for new features
-- Update documentation (README.md, docstrings)
+- Keep changes focused
+- Add or update tests when behavior changes
+- Update documentation when user-facing behavior changes
 
-### 3. Test your changes
+### 3. Verify your changes
 
 ```bash
-pytest tests/
-ruff check .
-mypy proof_agent/
+pytest -v
 ```
 
 ### 4. Push and create a PR
@@ -119,24 +108,12 @@ Then open a Pull Request on GitHub with:
 
 ## Contribution Ideas
 
-### High Priority
+Examples of useful contributions:
 
-- [ ] Add unit tests (pytest suite)
-- [ ] Add type hints (full mypy coverage)
-- [ ] Add example workflows (LangChain, LangGraph, OpenClaw)
-- [ ] Add CI/CD (GitHub Actions for tests + linting)
-
-### Medium Priority
-
-- [ ] Add more fact-checking rules (Docker image tags, PyPI versions)
-- [ ] Add support for custom verifier prompts (templates)
-- [ ] Add metrics/logging (verification success rate, false positives)
-
-### Low Priority
-
-- [ ] Add web dashboard (view verification history)
-- [ ] Add integration with LangSmith/LangFuse (observability)
-- [ ] Add support for other version control systems (Mercurial, SVN)
+- Expand test coverage around action behavior and shell scripts
+- Improve documentation and setup guidance
+- Add support for more provider-specific configuration options
+- Refine verification prompts and verdict parsing
 
 ---
 
