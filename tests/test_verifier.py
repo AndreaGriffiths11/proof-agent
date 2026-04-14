@@ -86,6 +86,56 @@ Code is safe to merge.
         # Should use LAST occurrence (PASS), not first (FAIL from example)
         assert result.verdict == Verdict.PASS
 
+    def test_gemma_verdict_format(self):
+        """Test Gemma's '### Verdict: PASS' format."""
+        text = "Analysis complete.\n\n### Verdict: PASS\n\nNo security issues found."
+        result = parse_verdict(text)
+        assert result.verdict == Verdict.PASS
+
+    def test_claude_bold_verdict(self):
+        """Test Claude's bold-wrapped verdicts."""
+        text = "Here's my assessment:\n\n**### PASS**\n\nCode looks secure."
+        result = parse_verdict(text)
+        assert result.verdict == Verdict.PASS
+
+    def test_wrong_heading_level(self):
+        """Test models that use wrong heading levels."""
+        text = "Assessment:\n\n## FAIL\n\nFound issues:"
+        result = parse_verdict(text)
+        assert result.verdict == Verdict.FAIL
+
+    def test_colon_without_bold(self):
+        """Test '#### Verdict: FAIL' format."""
+        text = "#### Verdict: PARTIAL\n\nSome checks passed."
+        result = parse_verdict(text)
+        assert result.verdict == Verdict.PARTIAL
+
+    def test_case_insensitive_matching(self):
+        """Test that verdict matching is case-insensitive."""
+        text = "### verdict: pass\n\nAll good."
+        result = parse_verdict(text)
+        assert result.verdict == Verdict.PASS
+
+    def test_multiple_verdict_formats_last_wins(self):
+        """Test that when multiple formats exist, last one wins."""
+        text = """## FAIL
+Early fail assessment
+
+### Verdict: PARTIAL
+Actually, some things unclear
+
+### PASS
+Final decision: all good
+"""
+        result = parse_verdict(text)
+        assert result.verdict == Verdict.PASS
+
+    def test_whitespace_handling(self):
+        """Test verdict patterns with various whitespace."""
+        text = "###    PASS   \n\nWith extra spaces."
+        result = parse_verdict(text)
+        assert result.verdict == Verdict.PASS
+
 
 # --- ProofConfig.load ---
 
