@@ -65,104 +65,48 @@ def should_verify(
 def build_verification_prompt(request: VerificationRequest) -> str:
     """Build the prompt for the verifier agent.
 
-    The prompt is structured so the verifier:
-    1. Cannot see the worker's self-assessment
-    2. Must run commands and include output
-    3. Must assign exactly one verdict
+    Optimized for small models: concise, direct, task-focused.
     """
     files_list = "\n".join(f"- `{f}`" for f in request.files_changed)
 
     previous = ""
     if request.previous_failures:
         items = "\n".join(f"- {f}" for f in request.previous_failures)
-        previous = f"""
-## Previous Failures (Attempt {request.attempt})
-These issues were found in previous verification. Check these FIRST:
-{items}
-"""
+        previous = f"\n\n**Previous Issues (Attempt {request.attempt}):**\n{items}\n\nCheck these FIRST, then review all code."
 
-    return f"""VERIFICATION REQUEST
+    return f"""You are a security auditor. Find ALL vulnerabilities in this code diff.
 
-## Original Request
-{request.original_request}
+**Request:** {request.original_request}
+**Files:** {files_list}
+**Approach:** {request.approach}{previous}
 
-## Files Changed
-{files_list}
+**Find these issues:**
+- SQL injection (string formatting in queries)
+- Hardcoded secrets (API keys, passwords)
+- Authentication bypasses
+- Path traversal vulnerabilities
+- Command injection
+- Exposed credentials in logs
+- Missing input validation
+- Insecure cryptography
 
-## Approach Taken
-{request.approach}
-{previous}
-## Your Job
+**For each issue found:**
+- **File:** path/file.js, **Line:** X
+- **Issue:** Brief description
+- **Code:** `problematic code snippet`
+- **Severity:** CRITICAL/HIGH/MEDIUM
 
-You are an **independent security auditor** conducting adversarial code review. The author CANNOT verify their own work — only you can assign a verdict.
-
-**CRITICAL:** You are reviewing the actual diff output. You CANNOT run commands or execute tests. Review the code changes directly.
-
-### Review Checklist
-
-Review each changed file for:
-
-1. **Security Vulnerabilities**
-   - SQL injection (string interpolation in queries)
-   - Hardcoded secrets (API keys, passwords, tokens)
-   - Exposed credentials (logging passwords, returning secrets)
-   - Authentication bypasses (broken logic, missing checks)
-   - Path traversal (unsanitized file paths)
-   - Command injection (shell execution with user input)
-   - XSS/CSRF vulnerabilities
-   - Insecure cryptography (weak algorithms, bad practices)
-
-2. **Correctness**
-   - Does the code match the stated purpose?
-   - Are there logical errors or broken assumptions?
-   - Will it work with edge cases (null, empty, malformed input)?
-
-3. **Code Quality**
-   - Are there obvious bugs (typos, copy-paste errors, undefined variables)?
-   - Is error handling present and correct?
-   - Are there race conditions or concurrency issues?
-
-### Critical Rules
-
-- **Review the actual code in the diff** — do NOT suggest running commands
-- **Be specific** — cite file names, line numbers, and exact code snippets
-- **Assume production use** — treat everything as security-sensitive
-- **Default to FAIL** — if you find ANY critical security issue, return FAIL immediately
-- **Use the exact verdict format** — `### PASS`, `### FAIL`, or `### PARTIAL`
-
-## Verdict Format
-
-You MUST respond with EXACTLY ONE of these verdict blocks:
-
+**Conclude with exactly:**
 ### PASS
-No security issues, bugs, or quality problems found.
-Code is safe to merge.
-
-(Use this ONLY if the code is actually safe. Finding even one security issue = FAIL.)
+No security issues found.
 
 ### FAIL
 Critical issues found. DO NOT MERGE.
 
-**Issues:**
-- **File:** `path/to/file.js`, **Line:** 42  
-  **Severity:** CRITICAL  
-  **Issue:** SQL injection vulnerability - user input directly interpolated into query  
-  **Code:** `query = "SELECT * FROM users WHERE name = '" + userName + "'"`  
-  **Fix:** Use parameterized queries
-
-(Include ALL issues found. Be specific. Cite actual code.)
-
 ### PARTIAL
-Could not complete verification due to missing context.
+Could not verify completely.
 
-**What was checked:**
-- (list what you successfully reviewed)
-
-**What could not be verified:**
-- (list what needs human review)
-- What passed (with evidence)
-- What could not be verified (with explanation of why)
-"""
+**Review the actual diff. Be specific. Cite exact code.**"""
 
 
 def parse_verdict(response: str) -> VerificationResult:
