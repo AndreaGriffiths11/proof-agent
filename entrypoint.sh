@@ -63,7 +63,9 @@ echo ""
 if [ -n "$PROOF_AGENT_PROVIDER_BASE_URL" ]; then
     echo "🔑 BYOK Mode Enabled"
     echo "   Provider: $PROOF_AGENT_PROVIDER_TYPE"
-    echo "   Base URL: $PROOF_AGENT_PROVIDER_BASE_URL"
+    # Mask potential credentials in URL
+    MASKED_URL=$(echo "$PROOF_AGENT_PROVIDER_BASE_URL" | sed 's/\?.*$//' | sed 's/:[^@]*@/:***@/')
+    echo "   Base URL: $MASKED_URL"
     echo "   Model: ${PROOF_AGENT_MODEL:-default}"
     echo ""
     

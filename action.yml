@@ -83,7 +83,11 @@ runs:
   steps:
     - name: Install proof-agent Python package
       shell: bash
-      run: pip install --force-reinstall --no-deps "${{ github.action_path }}"
+      run: |
+        # Install requests first (needed for BYOK)
+        pip install "requests>=2.25.0" "pyyaml>=6.0"
+        # Then install proof-agent without deps (to avoid conflicts)
+        pip install --force-reinstall --no-deps "${{ github.action_path }}"
 
     - name: Generate verification prompt
       id: prompt

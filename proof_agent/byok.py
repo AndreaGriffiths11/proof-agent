@@ -61,6 +61,7 @@ class BYOKClient:
             return {
                 "model": self.verifier_model,
                 "max_tokens": 4000,
+                "system": "You are an independent code verifier. Analyze the provided code changes and give a detailed security and correctness assessment.",
                 "messages": [
                     {
                         "role": "user",
@@ -69,13 +70,14 @@ class BYOKClient:
                 ]
             }
         elif self.provider_type == 'foundry':
+            # Generic Foundry format - works with various models
             return {
                 "model_id": self.verifier_model,
-                "input": f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+                "input": prompt,
                 "parameters": {
                     "max_new_tokens": 4000,
                     "temperature": 0.1,
-                    "stop_sequences": ["<|eot_id|>"]
+                    "instruction": "You are an independent code verifier. Analyze the provided code changes and give a detailed security and correctness assessment."
                 }
             }
         else:  # openai-compatible (default)
@@ -136,10 +138,12 @@ class BYOKClient:
                 try:
                     error_details = e.response.json()
                     error_msg += f"\nResponse: {json.dumps(error_details, indent=2)}"
-                except:
+                except (ValueError, json.JSONDecodeError):
                     error_msg += f"\nResponse text: {e.response.text}"
             
             raise Exception(error_msg)
+        except (ValueError, json.JSONDecodeError) as e:
+            raise Exception(f"JSON parsing failed: {str(e)}")
         except Exception as e:
             raise Exception(f"Verification failed: {str(e)}")
 
