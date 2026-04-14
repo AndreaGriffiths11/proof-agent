@@ -15,6 +15,36 @@ inputs:
     description: 'GitHub token with models:read permission (required for GitHub Models API access). If not provided, falls back to github-token.'
     required: false
     default: ''
+  
+  # BYOK Configuration
+  provider-base-url:
+    description: 'Custom model provider base URL (enables BYOK mode)'
+    required: false
+    default: ''
+  provider-type:
+    description: 'Provider type: openai, anthropic, azure, foundry (default: openai)'
+    required: false
+    default: 'openai'
+  provider-api-key:
+    description: 'API key for custom provider'
+    required: false
+    default: ''
+  provider-bearer-token:
+    description: 'Bearer token for custom provider (takes precedence over API key)'
+    required: false
+    default: ''
+  model:
+    description: 'Model name for both worker and verifier (e.g., claude-sonnet-4-20250514)'
+    required: false
+    default: ''
+  verifier-model:
+    description: 'Specific model for verifier (if different from worker model)'
+    required: false
+    default: ''
+  azure-api-version:
+    description: 'Azure API version for Azure OpenAI endpoints'
+    required: false
+    default: '2024-02-15-preview'
   base-ref:
     description: 'Git ref to compare against (e.g., origin/main, HEAD~1)'
     required: false
@@ -76,5 +106,15 @@ runs:
         INPUT_POST_COMMENT: ${{ inputs.post-comment }}
         INPUT_COMMENT_MODE: ${{ inputs.comment-mode }}
         INPUT_MAX_COMMENT_LENGTH: ${{ inputs.max-comment-length }}
+        
+        # BYOK Environment Variables
+        PROOF_AGENT_PROVIDER_BASE_URL: ${{ inputs.provider-base-url }}
+        PROOF_AGENT_PROVIDER_TYPE: ${{ inputs.provider-type }}
+        PROOF_AGENT_PROVIDER_API_KEY: ${{ inputs.provider-api-key }}
+        PROOF_AGENT_PROVIDER_BEARER_TOKEN: ${{ inputs.provider-bearer-token }}
+        PROOF_AGENT_MODEL: ${{ inputs.model }}
+        PROOF_AGENT_VERIFIER_MODEL: ${{ inputs.verifier-model }}
+        PROOF_AGENT_PROVIDER_AZURE_API_VERSION: ${{ inputs.azure-api-version }}
+        
         PR_NUMBER: ${{ github.event.pull_request.number }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

@@ -1,277 +1,256 @@
-# Proof Agent
+# Proof Agent v2.0 — BYOK Support 🔑
 
-[![GitHub release](https://img.shields.io/github/v/release/AndreaGriffiths11/proof-agent)](https://github.com/AndreaGriffiths11/proof-agent/releases)
-[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Proof%20Agent-blue.svg?colorA=24292e&colorB=0366d6&style=flat&longCache=true&logo=github)](https://github.com/marketplace/actions/proof-agent-verify)
+**Adversarial verification for AI-generated code with Bring Your Own Key support**
 
-**Adversarial verification for AI-generated work.**
+## What's New in v2.0
 
-The worker and the verifier are always separate agents. Self-verification is not verification.
+✨ **BYOK (Bring Your Own Key)** — Use your own model providers:
+- **Anthropic Claude** (direct API)
+- **Azure OpenAI** (enterprise accounts)
+- **Local models** (Ollama, vLLM)
+- **IBM Foundry** (enterprise AI)
+- **Any OpenAI-compatible endpoint**
 
----
-
-## The Problem
-
-AI agents generate code that breaks in production. They hallucinate package versions. They make security claims that fall apart under scrutiny. And when you ask them to verify their own work? They rationalize the mistakes instead of catching them.
-
-Self-verification doesn't work because the same model that made the error will defend it.
-
----
-
-## How It Works
-
-Proof Agent enforces separation:
-
-1. **Worker agent** makes changes
-2. **Verifier agent** (separate, independent) checks the work
-3. Verifier runs commands, checks facts, assigns a verdict
-
-The verifier has no access to the worker's self-assessment. It must verify with evidence.
-
-**Verdicts:**
-- **PASS** — All checks passed with evidence
-- **FAIL** — Issues found. Report specifics. Retry up to 3 times if auto-fixable.
-- **PARTIAL** — Some checks passed, others couldn't be verified
-
----
-
-## What It Checks
-
-- **Security Vulnerabilities** — SQL injection, hardcoded secrets, authentication bypasses, XSS/CSRF
-- **Correctness** — Does the code match the stated purpose? Logical errors?
-- **Code Quality** — Bugs, error handling, race conditions, edge cases
-- **Static Analysis** — Reviews code changes directly from git diff
-
-**Review method:** Static code review (reads diff output, does NOT execute code or run tests)
-
-**Rule:** Verifier must cite specific files, line numbers, and code snippets in verdict.
-
----
+✨ **Dual model support** — Use different models for worker vs verifier
+✨ **Cost optimization** — Route to cheaper providers 
+✨ **Backward compatible** — GitHub Models still work by default
 
 ## Quick Start
 
-### GitHub Action (Zero Setup)
-
-Add this workflow to your repo:
-
-**`.github/workflows/proof-agent.yml`:**
+### Default (GitHub Models)
 ```yaml
-name: Proof Agent
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-permissions:
-  contents: read
-  pull-requests: write
-  models: read  # Required for GitHub Models API
-
-jobs:
-  verify:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - uses: AndreaGriffiths11/proof-agent@main
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          base-ref: origin/main
-          block-on-fail: true
-          post-comment: true
+- name: Proof Agent Verification
+  uses: AndreaGriffiths11/proof-agent@v2.0
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-That's it. Every PR gets automatic verification.
+### BYOK Examples
 
-**Uses GitHub Models API (free tier).** No API keys or tokens needed.
-
----
-
-### OpenClaw Skill (Interactive)
-
-```bash
-clawhub install proof-agent
+#### Anthropic Claude
+```yaml
+- name: Proof Agent Verification  
+  uses: AndreaGriffiths11/proof-agent@v2.0
+  env:
+    PROOF_AGENT_PROVIDER_BASE_URL: https://api.anthropic.com
+    PROOF_AGENT_PROVIDER_TYPE: anthropic
+    PROOF_AGENT_PROVIDER_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    PROOF_AGENT_MODEL: claude-sonnet-4-20250514
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-Talk to your agent:
+#### Azure OpenAI
+```yaml
+- name: Proof Agent Verification
+  uses: AndreaGriffiths11/proof-agent@v2.0
+  env:
+    PROOF_AGENT_PROVIDER_TYPE: azure
+    PROOF_AGENT_PROVIDER_BASE_URL: https://mycompany.openai.azure.com
+    PROOF_AGENT_PROVIDER_API_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
+    PROOF_AGENT_MODEL: gpt-4-turbo
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
 
-> "I added OAuth login. Verify it's safe."
+#### Local Ollama
+```yaml
+- name: Proof Agent Verification
+  uses: AndreaGriffiths11/proof-agent@v2.0
+  env:
+    PROOF_AGENT_PROVIDER_BASE_URL: http://localhost:11434/v1
+    PROOF_AGENT_MODEL: deepseek-coder-v2:16b
+    # No API key needed for local
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
 
-The agent spawns a verifier subagent and runs checks.
+#### IBM Foundry
+```yaml
+- name: Proof Agent Verification
+  uses: AndreaGriffiths11/proof-agent@v2.0  
+  env:
+    PROOF_AGENT_PROVIDER_BASE_URL: https://us-south.ml.cloud.ibm.com/ml/v1
+    PROOF_AGENT_PROVIDER_TYPE: foundry
+    PROOF_AGENT_PROVIDER_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+    PROOF_AGENT_MODEL: meta-llama/llama-3-70b-instruct
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
 
----
+#### Dual Model Setup
+```yaml
+- name: Proof Agent Verification
+  uses: AndreaGriffiths11/proof-agent@v2.0
+  env:
+    PROOF_AGENT_PROVIDER_BASE_URL: https://api.anthropic.com
+    PROOF_AGENT_PROVIDER_TYPE: anthropic
+    PROOF_AGENT_PROVIDER_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    PROOF_AGENT_MODEL: claude-haiku-4-20250514              # Fast for worker
+    PROOF_AGENT_VERIFIER_MODEL: claude-sonnet-4-20250514   # Thorough for verifier
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
 
-### Command Line (Manual)
+## Environment Variables
+
+### Core BYOK Configuration
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PROOF_AGENT_PROVIDER_BASE_URL` | Provider API endpoint (enables BYOK) | *(none)* |
+| `PROOF_AGENT_PROVIDER_TYPE` | Provider type: `openai`, `anthropic`, `azure`, `foundry` | `openai` |
+| `PROOF_AGENT_PROVIDER_API_KEY` | API key for authentication | *(none)* |
+| `PROOF_AGENT_MODEL` | Model name for verification | *(required for BYOK)* |
+| `PROOF_AGENT_VERIFIER_MODEL` | Different model for verifier (optional) | *(same as model)* |
+
+### Advanced Options
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PROOF_AGENT_PROVIDER_BEARER_TOKEN` | Bearer token (takes precedence over API key) | *(none)* |
+| `PROOF_AGENT_PROVIDER_AZURE_API_VERSION` | Azure API version | `2024-02-15-preview` |
+
+## Supported Providers
+
+### ✅ OpenAI Compatible
+- **OpenAI** — `https://api.openai.com/v1`
+- **Ollama** — `http://localhost:11434/v1`
+- **vLLM** — `http://your-vllm-server/v1`
+- **Any OpenAI-compatible API**
+
+### ✅ Anthropic
+- **Direct API** — `https://api.anthropic.com`
+- **Claude models**: `claude-sonnet-4-20250514`, `claude-haiku-4-20250514`, etc.
+
+### ✅ Azure OpenAI
+- **Enterprise endpoints** — `https://yourresource.openai.azure.com`
+- **Deployment names** supported via model configuration
+- **API versions** auto-handled
+
+### ✅ IBM Foundry  
+- **Watsonx models** — `https://us-south.ml.cloud.ibm.com/ml/v1`
+- **Llama, Mistral, CodeLlama** models supported
+
+## Cost Optimization
+
+### Tiered Verification Strategy
+```bash
+# Use cheap models for initial screening
+export PROOF_AGENT_MODEL="claude-haiku-4-20250514"      # $0.25/1M tokens
+
+# Use expensive models only for critical PRs  
+export PROOF_AGENT_VERIFIER_MODEL="claude-opus-4.6"    # $15/1M tokens (when needed)
+```
+
+### Provider Comparison
+| Provider | Speed | Cost | Use Case |
+|----------|-------|------|----------|
+| **GitHub Models** | Fast | Free* | Default, good for most cases |
+| **Claude Haiku** | Fastest | Lowest | Bulk verification, cost-sensitive |
+| **Claude Sonnet** | Medium | Medium | Balanced performance/cost |
+| **GPT-4 Turbo** | Fast | Medium | Enterprise with Azure credits |
+| **Local Ollama** | Variable | Free | Privacy-sensitive, offline |
+
+*Subject to GitHub Copilot quotas
+
+## Migration Guide
+
+### From v1.x to v2.0
+
+**✅ No breaking changes** — existing workflows continue to work unchanged.
+
+**✅ Optional adoption** — Add BYOK when you need it:
+
+1. **Keep current setup** (GitHub Models)
+2. **Test with your provider** in a dev branch  
+3. **Switch production** when ready
+
+### Adding BYOK to Existing Workflows
+
+```yaml
+# Before (v1.x - still works)
+- uses: AndreaGriffiths11/proof-agent@v1.0
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+
+# After (v2.0 - add BYOK)  
+- uses: AndreaGriffiths11/proof-agent@v2.0
+  env:
+    PROOF_AGENT_PROVIDER_BASE_URL: https://api.anthropic.com
+    PROOF_AGENT_PROVIDER_TYPE: anthropic
+    PROOF_AGENT_PROVIDER_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    PROOF_AGENT_MODEL: claude-sonnet-4-20250514
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+## Benefits
+
+### 🏢 **Enterprise**
+- **Compliance**: Keep data within your infrastructure
+- **Cost control**: Use your existing AI budgets and quotas  
+- **Governance**: Standardize on approved models only
+- **Performance**: Fine-tuned models optimized for your codebase
+
+### 👩‍💻 **Individual Developers**  
+- **Cost savings**: Use your own API credits vs quotas
+- **Model choice**: Pick the best model for your needs
+- **Experimentation**: Test cutting-edge models easily
+
+### 🔒 **Privacy & Security**
+- **Local inference**: Use Ollama for sensitive codebases
+- **Data residency**: Azure regions for regulatory compliance  
+- **Air-gapped**: Self-hosted models for maximum security
+
+## Local Development
 
 ```bash
+# Clone and install  
 git clone https://github.com/AndreaGriffiths11/proof-agent.git
 cd proof-agent
+pip install -e .
 
-# Generate verification prompt
-bash scripts/verify.sh > verification_prompt.txt
+# Test BYOK locally
+export PROOF_AGENT_PROVIDER_BASE_URL=http://localhost:11434/v1
+export PROOF_AGENT_MODEL=deepseek-coder-v2:16b
 
-# Send to your LLM
-cat verification_prompt.txt | your-llm-cli
+# Generate and test verification
+./scripts/verify.sh | proof-agent-verify-byok
 ```
-
----
-
-## Configuration
-
-### Action Inputs
-
-```yaml
-- uses: AndreaGriffiths11/proof-agent@main
-  with:
-    # GitHub token (use built-in GITHUB_TOKEN)
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    
-    # Git ref to compare against
-    base-ref: origin/main
-    
-    # Block PR merge if FAIL
-    block-on-fail: true
-    
-    # Post verdict as PR comment
-    post-comment: true
-    
-    # Comment format: collapse (default), summary, or full
-    comment-mode: collapse
-    
-    # Max comment length in characters
-    max-comment-length: 2000
-```
-
-**Comment modes:**
-- `collapse` — First paragraph visible, rest in expandable section
-- `summary` — Verdict + key findings only
-- `full` — Everything visible (truncates at max-comment-length)
-
----
-
-### Proof Agent Config (proof-agent.yaml)
-
-Customize thresholds and patterns:
-
-```yaml
-thresholds:
-  min_files_changed: 3
-  always_verify:
-    - "**/*auth*"
-    - "**/*secret*"
-    - "**/*permission*"
-    - "**/Dockerfile"
-    - "**/*.env*"
-  never_verify:
-    - "**/.gitignore"
-
-retry:
-  max_attempts: 3
-  escalate_on_max: true
-```
-
----
-
-## When Verification Triggers
-
-**Auto-verify when:**
-- ≥3 files changed
-- ANY file matches: `*auth*`, `*secret*`, `*permission*`, `Dockerfile`, `*.env*`
-- User explicitly requests verification
-
-**Skip for:**
-- Formatting-only changes
-- `.gitignore` changes
-
----
-
-## Example Workflow
-
-**Scenario:** AI agent writes authentication code
-
-1. **Worker agent** generates `src/auth.py`, `tests/test_auth.py`, updates `requirements.txt`
-2. **Proof Agent** detects: 3+ files changed + `*auth*` pattern → triggers verification
-3. **Verifier agent** spawns, receives:
-   - Original request
-   - Files changed (list)
-   - Approach taken (git diff output)
-4. **Verifier reviews the code changes:**
-   - Scans `src/auth.py` for hardcoded secrets, SQL injection, auth bypasses
-   - Checks `tests/test_auth.py` for edge case coverage
-   - Reviews `requirements.txt` for suspicious dependencies
-5. **Verifier finds:**
-   - Hardcoded API key in `src/auth.py:42` (`API_KEY = "sk-1234...")
-   - SQL query uses string interpolation (injection risk)
-   - Missing input validation on username parameter
-6. **Verdict:** **FAIL** — Security issues (hardcoded secret + SQL injection + missing validation)
-7. **Proof Agent** posts comment, blocks merge
-8. **Developer fixes issues** → pushes new commit → **re-verifies** → **PASS**
-
----
 
 ## Troubleshooting
 
-### Action fails with "No access to model"
+### Common Issues
 
-**Check workflow permissions:**
+**❌ "BYOK verification failed"**
+- Check `PROOF_AGENT_PROVIDER_BASE_URL` is set and reachable  
+- Verify `PROOF_AGENT_MODEL` matches provider's available models
+- Check API key permissions and quotas
+
+**❌ "No verification prompt provided"**  
+- Ensure `verification_prompt.txt` exists
+- Check file permissions in GitHub Actions environment
+
+**❌ Azure deployment not found**
+- Use deployment name as `PROOF_AGENT_MODEL` 
+- Verify Azure API version compatibility
+
+### Debug Mode
+
 ```yaml
-permissions:
-  contents: read
-  pull-requests: write
-  models: read  # ← Required for GitHub Models API
+- name: Debug Proof Agent
+  uses: AndreaGriffiths11/proof-agent@v2.0
+  env:
+    PROOF_AGENT_PROVIDER_BASE_URL: ${{ secrets.DEBUG_ENDPOINT }}
+    PROOF_AGENT_MODEL: debug-model
+    ACTIONS_RUNNER_DEBUG: true  # Enable verbose logging
 ```
 
-**Verify GitHub Models is enabled:**
-- Go to https://github.com/marketplace?type=models
-- Confirm you can access models (free tier available)
-
 ---
 
-### PR comment not posted (403/404 error)
+## About
 
-**Check workflow permissions:**
-```yaml
-permissions:
-  pull-requests: write  # ← Required for posting comments
-  contents: read
-  models: read
-```
+**Proof Agent** ensures AI-generated code is verified by an independent AI agent before merging. The worker writes code, the verifier finds problems.
 
-For private repos, use `secrets.GITHUB_TOKEN` (already has correct permissions).
+**Key principle**: *Self-verification isn't verification.*
 
----
-
-### SKIP on every PR
-
-Proof Agent skips if <3 files changed AND no sensitive files detected.
-
-**To force verification:**
-- Change 3+ files, OR
-- Touch a sensitive file: `*auth*`, `*secret*`, `Dockerfile`, `*.env*`
-
----
-
-## Why Adversarial Verification?
-
-**Single-agent limitations:**
-- Same model that made the mistake will rationalize it
-- Confirmation bias in self-review
-- No incentive to find flaws
-
-**Adversarial separation:**
-- Verifier has no stake in worker's success
-- Forced to provide evidence
-- Different prompts catch different issues
-
-**Real-world analogy:**
-- Code review (separate developer)
-- Security audit (external team)
-- Peer review (different researcher)
-
----
-
-## License
-
-MIT — Andrea Griffiths, 2026
+Created by [Andrea Griffiths](https://github.com/AndreaGriffiths11) • [Report Issues](https://github.com/AndreaGriffiths11/proof-agent/issues) • [Marketplace](https://github.com/marketplace/actions/proof-agent-verify)

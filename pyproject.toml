@@ -9,7 +9,7 @@ description = "Adversarial verification for AI agent work"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-dependencies = ["pyyaml>=6.0"]
+dependencies = ["pyyaml>=6.0", "requests>=2.25.0"]
 
 [project.urls]
 Homepage = "https://github.com/AndreaGriffiths11/proof-agent"
@@ -17,6 +17,7 @@ Homepage = "https://github.com/AndreaGriffiths11/proof-agent"
 [project.scripts]
 proof-agent-parse-verdict = "proof_agent.cli:parse_verdict_cli"
 proof-agent-build-prompt = "proof_agent.cli:build_prompt_cli"
+proof-agent-verify-byok = "proof_agent.byok:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
