@@ -102,7 +102,7 @@ def test_byok_client_anthropic_payload():
 
 def test_byok_client_authentication_headers():
     """Test authentication header setup"""
-    # Test API key
+    # Test OpenAI API key
     env_vars = {
         'PROOF_AGENT_PROVIDER_BASE_URL': 'https://api.openai.com/v1',
         'PROOF_AGENT_PROVIDER_API_KEY': 'sk-test-key',
@@ -125,6 +125,18 @@ def test_byok_client_authentication_headers():
         client = BYOKClient()
         assert client.headers['x-api-key'] == 'sk-ant-test'
         assert client.headers['anthropic-version'] == '2023-06-01'
+    
+    # Test Azure API key
+    env_vars = {
+        'PROOF_AGENT_PROVIDER_BASE_URL': 'https://mycompany.openai.azure.com',
+        'PROOF_AGENT_PROVIDER_TYPE': 'azure',
+        'PROOF_AGENT_PROVIDER_API_KEY': 'azure-key-123',
+        'PROOF_AGENT_MODEL': 'gpt-4-deployment'
+    }
+    
+    with patch.dict(os.environ, env_vars, clear=True):
+        client = BYOKClient()
+        assert client.headers['api-key'] == 'azure-key-123'
 
 
 @patch('proof_agent.byok.requests.post')

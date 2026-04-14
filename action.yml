@@ -1,5 +1,5 @@
 name: 'proof-agent-verify'
-description: 'Adversarial verification for AI-generated code using GitHub Models API'
+description: 'Adversarial verification for AI-generated code using GitHub Models API or custom providers (Anthropic, Azure OpenAI, OpenAI-compatible)'
 author: 'Andrea Griffiths'
 
 branding:

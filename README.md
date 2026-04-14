@@ -148,7 +148,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-**Supported providers:** Anthropic, Azure OpenAI, local Ollama, IBM Foundry, any OpenAI-compatible endpoint.
+**Supported providers:** Anthropic, Azure OpenAI, OpenAI-compatible endpoints (OpenAI, Ollama, vLLM, etc.).
 
 **Cost optimization:** Use different models for worker vs verifier with `PROOF_AGENT_VERIFIER_MODEL`.
 

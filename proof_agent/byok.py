@@ -37,7 +37,9 @@ class BYOKClient:
             if self.provider_type == 'anthropic':
                 self.headers['x-api-key'] = self.api_key
                 self.headers['anthropic-version'] = '2023-06-01'
-            else:  # openai, azure, foundry
+            elif self.provider_type == 'azure':
+                self.headers['api-key'] = self.api_key
+            else:  # openai-compatible
                 self.headers['Authorization'] = f'Bearer {self.api_key}'
     
     def _build_endpoint(self) -> str:
@@ -49,8 +51,6 @@ class BYOKClient:
             return f"{base}/openai/deployments/{self.verifier_model}/chat/completions?api-version={self.azure_api_version}"
         elif self.provider_type == 'anthropic':
             return f"{base}/v1/messages"
-        elif self.provider_type == 'foundry':
-            return f"{base}/text/generation"
         else:  # openai-compatible (default)
             return f"{base}/chat/completions" if base.endswith('/v1') else f"{base}/v1/chat/completions"
     
@@ -69,18 +69,7 @@ class BYOKClient:
                     }
                 ]
             }
-        elif self.provider_type == 'foundry':
-            # Generic Foundry format - works with various models
-            return {
-                "model_id": self.verifier_model,
-                "input": prompt,
-                "parameters": {
-                    "max_new_tokens": 4000,
-                    "temperature": 0.1,
-                    "instruction": "You are an independent code verifier. Analyze the provided code changes and give a detailed security and correctness assessment."
-                }
-            }
-        else:  # openai-compatible (default)
+        else:  # openai-compatible (default, includes Azure)
             return {
                 "model": self.verifier_model,
                 "messages": [
@@ -103,10 +92,7 @@ class BYOKClient:
         if self.provider_type == 'anthropic':
             if 'content' in response_data and len(response_data['content']) > 0:
                 return response_data['content'][0]['text']
-        elif self.provider_type == 'foundry':
-            if 'results' in response_data and len(response_data['results']) > 0:
-                return response_data['results'][0]['generated_text']
-        else:  # openai-compatible
+        else:  # openai-compatible (default, includes Azure)
             if 'choices' in response_data and len(response_data['choices']) > 0:
                 return response_data['choices'][0]['message']['content']
         
