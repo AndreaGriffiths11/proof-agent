@@ -5,6 +5,7 @@ Determines whether work needs verification, builds verification prompts,
 and parses verifier responses.
 """
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -169,20 +170,26 @@ def parse_verdict(response: str) -> VerificationResult:
 
     Looks for verdict keywords and extracts issues/evidence.
     Uses LAST occurrence of verdict to avoid prompt-echo false positives.
+    Handles common model output variations like '### Verdict: PASS'.
     """
-    response_lower = response.lower()
-
-    # Find ALL verdict headings, use the LAST one (avoid prompt-echo)
-    verdict_positions = [
-        (response_lower.rfind("### fail"), Verdict.FAIL),
-        (response_lower.rfind("### partial"), Verdict.PARTIAL),
-        (response_lower.rfind("### pass"), Verdict.PASS),
+    
+    # Regex patterns to match various model output formats:
+    # ### PASS, ### Verdict: PASS, **### PASS**, ## PASS, #### Verdict: PASS, etc.
+    patterns = [
+        (r'\*{0,2}#+\s*(?:verdict\s*:\s*)?fail(?:\s|$|\*)', Verdict.FAIL),
+        (r'\*{0,2}#+\s*(?:verdict\s*:\s*)?partial(?:\s|$|\*)', Verdict.PARTIAL),
+        (r'\*{0,2}#+\s*(?:verdict\s*:\s*)?pass(?:\s|$|\*)', Verdict.PASS),
     ]
     
-    # Filter out -1 (not found), sort by position, take last
-    found = [(pos, v) for pos, v in verdict_positions if pos != -1]
-    if found:
-        verdict = max(found, key=lambda x: x[0])[1]
+    # Find ALL verdict matches, use the LAST one (avoid prompt-echo)
+    verdict_matches = []
+    for pattern, verdict_type in patterns:
+        for match in re.finditer(pattern, response, re.IGNORECASE | re.MULTILINE):
+            verdict_matches.append((match.start(), verdict_type))
+    
+    # Sort by position and take the last match
+    if verdict_matches:
+        verdict = max(verdict_matches, key=lambda x: x[0])[1]
     else:
         # If no structured heading found, default to PARTIAL (safe)
         verdict = Verdict.PARTIAL

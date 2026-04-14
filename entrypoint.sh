@@ -31,10 +31,7 @@ if echo "$PROMPT_CONTENT" | grep -q "^SKIP:"; then
     # Post as PR comment if requested
     if [ "$INPUT_POST_COMMENT" = "true" ] && [ -n "$PR_NUMBER" ]; then
         echo "💬 Posting skip notice as PR comment..."
-        echo "   Repo: $GITHUB_REPOSITORY"
-        echo "   PR: $PR_NUMBER"
         
-        # Use GitHub REST API directly
         COMMENT_BODY="## 🤖 Proof Agent Verification
 
 ⏭️ **SKIPPED**
@@ -46,7 +43,6 @@ $VERDICT
 
 [🔗 View logs]($RUN_URL)"
         
-        # Use the token passed as input (COPILOT_TOKEN via github-token input)
         curl -X POST \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${INPUT_GITHUB_TOKEN}" \
@@ -63,48 +59,73 @@ fi
 
 echo ""
 
-# Install gh-models extension if not already installed
-# The gh-models extension provides `gh models run` for GitHub Actions
-if ! gh extension list 2>/dev/null | grep -q "gh-models"; then
-    echo "Installing gh-models extension..."
-    gh extension install https://github.com/github/gh-models 2>&1 || {
-        echo "⚠️ Failed to install gh-models extension"
-        echo "Falling back to manual review mode"
-        VERDICT="### PARTIAL\ngh-models extension installation failed. Manual review required.\nSee verification_prompt.txt for the full prompt."
-        VERDICT=$(printf '%b' "$VERDICT")
-        echo "$VERDICT" > verdict.txt
-        echo "$VERDICT"
-        echo ""
-        VERDICT_TYPE="PARTIAL"
-        echo "⚠️ Verification: PARTIAL"
-        
-        # Skip to end (after verdict parsing)
-        MODELS_FAILED=true
-    }
-fi
-
-if [ "$MODELS_FAILED" != "true" ]; then
-    # Use GitHub Models via gh models run
-    # Using meta/llama-3.3-70b-instruct (widely available, good performance)
-    COPILOT_MODEL="${GH_COPILOT_MODEL:-meta/llama-3.3-70b-instruct}"
-    
-    echo "📝 Sending verification prompt via GitHub Models ($COPILOT_MODEL)..."
+# Check if BYOK mode is enabled
+if [ -n "$PROOF_AGENT_PROVIDER_BASE_URL" ]; then
+    echo "🔑 BYOK Mode Enabled"
+    echo "   Provider: $PROOF_AGENT_PROVIDER_TYPE"
+    # Mask potential credentials in URL
+    MASKED_URL=$(echo "$PROOF_AGENT_PROVIDER_BASE_URL" | sed 's/\?.*$//' | sed 's/:[^@]*@/:***@/')
+    echo "   Base URL: $MASKED_URL"
+    echo "   Model: ${PROOF_AGENT_MODEL:-default}"
     echo ""
     
+    # Use the proof-agent Python package for BYOK verification
+    echo "📝 Running verification via custom provider..."
+    
     COPILOT_EXIT=0
-    # Capture both stdout and stderr to see what's failing
-    VERDICT=$(echo "$PROMPT_CONTENT" | gh models run "$COPILOT_MODEL" 2>&1) || COPILOT_EXIT=$?
+    VERDICT=$(echo "$PROMPT_CONTENT" | proof-agent-verify-byok) || COPILOT_EXIT=$?
     
     if [ "$COPILOT_EXIT" -ne 0 ]; then
-        echo "⚠️ gh models run failed (exit $COPILOT_EXIT)"
+        echo "⚠️ BYOK verification failed (exit $COPILOT_EXIT)"
         echo "Error output:"
         echo "$VERDICT"
         echo ""
-        echo "Falling back to manual review mode — prompt saved to verification_prompt.txt"
-        echo "Review the prompt manually and assign a verdict."
-        echo ""
-        VERDICT="### PARTIAL\ngh models run failed (exit $COPILOT_EXIT).\nError: $VERDICT\n\nSee verification_prompt.txt for the full prompt."
+        echo "Falling back to manual review mode"
+        VERDICT="### PARTIAL\nBYOK verification failed (exit $COPILOT_EXIT).\nError: $VERDICT\n\nSee verification_prompt.txt for the full prompt."
         VERDICT=$(printf '%b' "$VERDICT")
+    fi
+else
+    # Original GitHub Models path
+    # Install gh-models extension if not already installed
+    if ! gh extension list 2>/dev/null | grep -q "gh-models"; then
+        echo "Installing gh-models extension..."
+        gh extension install https://github.com/github/gh-models 2>&1 || {
+            echo "⚠️ Failed to install gh-models extension"
+            echo "Falling back to manual review mode"
+            VERDICT="### PARTIAL\ngh-models extension installation failed. Manual review required.\nSee verification_prompt.txt for the full prompt."
+            VERDICT=$(printf '%b' "$VERDICT")
+            echo "$VERDICT" > verdict.txt
+            echo "$VERDICT"
+            echo ""
+            VERDICT_TYPE="PARTIAL"
+            echo "⚠️ Verification: PARTIAL"
+            
+            # Skip to end (after verdict parsing)
+            MODELS_FAILED=true
+        }
+    fi
+
+    if [ "$MODELS_FAILED" != "true" ]; then
+        # Use GitHub Models via gh models run
+        COPILOT_MODEL="${GH_COPILOT_MODEL:-meta/llama-3.3-70b-instruct}"
+        
+        echo "📝 Sending verification prompt via GitHub Models ($COPILOT_MODEL)..."
+        echo ""
+        
+        COPILOT_EXIT=0
+        VERDICT=$(echo "$PROMPT_CONTENT" | gh models run "$COPILOT_MODEL" 2>&1) || COPILOT_EXIT=$?
+        
+        if [ "$COPILOT_EXIT" -ne 0 ]; then
+            echo "⚠️ gh models run failed (exit $COPILOT_EXIT)"
+            echo "Error output:"
+            echo "$VERDICT"
+            echo ""
+            echo "Falling back to manual review mode — prompt saved to verification_prompt.txt"
+            echo "Review the prompt manually and assign a verdict."
+            echo ""
+            VERDICT="### PARTIAL\ngh models run failed (exit $COPILOT_EXIT).\nError: $VERDICT\n\nSee verification_prompt.txt for the full prompt."
+            VERDICT=$(printf '%b' "$VERDICT")
+        fi
     fi
 fi
 
@@ -141,7 +162,6 @@ if [ "$INPUT_POST_COMMENT" = "true" ] && [ -n "$PR_NUMBER" ]; then
     # Format verdict for PR comment based on mode
     case "$COMMENT_MODE" in
         summary)
-            # Summary only: just verdict + key findings
             VERDICT_SUMMARY=$(echo "$VERDICT" | head -20)
             VERDICT_FORMATTED="$VERDICT_SUMMARY
 
@@ -156,7 +176,6 @@ $VERDICT
 </details>"
             ;;
         collapse)
-            # Collapse mode: verdict visible, details collapsed
             VERDICT_FIRST_PARA=$(echo "$VERDICT" | head -10)
             VERDICT_FORMATTED="$VERDICT_FIRST_PARA
 
@@ -171,7 +190,6 @@ $VERDICT
 [🔗 View full logs]($RUN_URL)"
             ;;
         full)
-            # Full mode: show everything (with truncation if needed)
             VERDICT_FORMATTED="$VERDICT"
             ;;
         *)
@@ -190,24 +208,22 @@ $VERDICT
     
     # Verdict badge
     case "$VERDICT_TYPE" in
-        PASS)
-            VERDICT_BADGE="✅ **PASS**"
-            ;;
-        FAIL)
-            VERDICT_BADGE="❌ **FAIL**"
-            ;;
-        PARTIAL)
-            VERDICT_BADGE="⚠️ **PARTIAL**"
-            ;;
-        SKIP)
-            VERDICT_BADGE="⏭️ **SKIPPED**"
-            ;;
-        *)
-            VERDICT_BADGE="❓ **$VERDICT_TYPE**"
-            ;;
+        PASS)    VERDICT_BADGE="✅ **PASS**" ;;
+        FAIL)    VERDICT_BADGE="❌ **FAIL**" ;;
+        PARTIAL) VERDICT_BADGE="⚠️ **PARTIAL**" ;;
+        SKIP)    VERDICT_BADGE="⏭️ **SKIPPED**" ;;
+        *)       VERDICT_BADGE="❓ **$VERDICT_TYPE**" ;;
     esac
     
-    # Use GitHub REST API directly
+    # Provider info for BYOK
+    PROVIDER_INFO=""
+    if [ -n "$PROOF_AGENT_PROVIDER_BASE_URL" ]; then
+        PROVIDER_MODEL="${PROOF_AGENT_MODEL:-custom model}"
+        PROVIDER_INFO="*Verified using [Proof Agent](https://github.com/AndreaGriffiths11/proof-agent) with $PROVIDER_MODEL*"
+    else
+        PROVIDER_INFO="*Verified using [Proof Agent](https://github.com/AndreaGriffiths11/proof-agent) with GitHub Copilot*"
+    fi
+    
     COMMENT_BODY="## 🤖 Proof Agent Verification
 
 $VERDICT_BADGE
@@ -215,9 +231,8 @@ $VERDICT_BADGE
 $VERDICT_FORMATTED
 
 ---
-*Verified using [Proof Agent](https://github.com/AndreaGriffiths11/proof-agent) with GitHub Copilot*"
+$PROVIDER_INFO"
     
-    # Use the token passed as input (COPILOT_TOKEN via github-token input)
     curl -X POST \
       -H "Accept: application/vnd.github+json" \
       -H "Authorization: Bearer ${INPUT_GITHUB_TOKEN}" \

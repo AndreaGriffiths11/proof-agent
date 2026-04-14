@@ -89,6 +89,71 @@ That's it. Every PR gets automatic verification.
 
 ---
 
+## 🔑 Custom Model Providers (BYOK)
+
+**New in v2.0:** Use your own model providers for verification.
+
+### Anthropic Claude
+```yaml
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      PROOF_AGENT_PROVIDER_BASE_URL: https://api.anthropic.com
+      PROOF_AGENT_PROVIDER_TYPE: anthropic
+      PROOF_AGENT_PROVIDER_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      PROOF_AGENT_MODEL: claude-sonnet-4-20250514
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: AndreaGriffiths11/proof-agent@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Azure OpenAI
+```yaml
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      PROOF_AGENT_PROVIDER_TYPE: azure
+      PROOF_AGENT_PROVIDER_BASE_URL: https://mycompany.openai.azure.com
+      PROOF_AGENT_PROVIDER_API_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
+      PROOF_AGENT_MODEL: gpt-4-turbo
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: AndreaGriffiths11/proof-agent@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Local Ollama
+```yaml
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      PROOF_AGENT_PROVIDER_BASE_URL: http://localhost:11434/v1
+      PROOF_AGENT_MODEL: deepseek-coder-v2:16b
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: AndreaGriffiths11/proof-agent@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Supported providers:** Anthropic, Azure OpenAI, OpenAI-compatible endpoints (OpenAI, Ollama, vLLM, etc.).
+
+**Cost optimization:** Use a different model for the verifier step with `PROOF_AGENT_VERIFIER_MODEL`.
+
+---
+
 ### OpenClaw Skill (Interactive)
 
 ```bash

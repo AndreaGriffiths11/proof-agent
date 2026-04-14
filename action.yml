@@ -1,5 +1,5 @@
 name: 'proof-agent-verify'
-description: 'Adversarial verification for AI-generated code using GitHub Models API'
+description: 'Adversarial verification for AI-generated code using GitHub Models API or custom providers (Anthropic, Azure OpenAI, OpenAI-compatible)'
 author: 'Andrea Griffiths'
 
 branding:
@@ -53,7 +53,11 @@ runs:
   steps:
     - name: Install proof-agent Python package
       shell: bash
-      run: pip install --force-reinstall --no-deps "${{ github.action_path }}"
+      run: |
+        # Install requests first (needed for BYOK)
+        pip install "requests>=2.25.0" "pyyaml>=6.0"
+        # Then install proof-agent without deps (to avoid conflicts)
+        pip install --force-reinstall --no-deps "${{ github.action_path }}"
 
     - name: Generate verification prompt
       id: prompt
@@ -76,5 +80,10 @@ runs:
         INPUT_POST_COMMENT: ${{ inputs.post-comment }}
         INPUT_COMMENT_MODE: ${{ inputs.comment-mode }}
         INPUT_MAX_COMMENT_LENGTH: ${{ inputs.max-comment-length }}
+        
+        # BYOK env vars inherit from job/step level - no override here
+        # Users set these via job-level env: or step-level env:
+        # PROOF_AGENT_PROVIDER_BASE_URL, PROOF_AGENT_PROVIDER_TYPE, etc.
+        
         PR_NUMBER: ${{ github.event.pull_request.number }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
