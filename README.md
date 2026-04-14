@@ -85,13 +85,13 @@ jobs:
 
 That's it. Every PR gets automatic verification.
 
-**Uses GitHub Models API (free tier).** No API keys or tokens needed.
+**Uses GitHub Models API (free tier).** No extra provider API keys are required for the default GitHub Models path. If your environment needs a separate token for model access, you can also pass the optional `models-token` input.
 
 ---
 
 ## 🔑 Custom Model Providers (BYOK)
 
-**New in v2.0:** Use your own model providers for verification.
+Use your own model providers for verification.
 
 ### Anthropic Claude
 ```yaml
@@ -196,8 +196,15 @@ cat verification_prompt.txt | your-llm-cli
     # GitHub token (use built-in GITHUB_TOKEN)
     github-token: ${{ secrets.GITHUB_TOKEN }}
     
+    # Optional token used only for GitHub Models access
+    # Falls back to github-token when omitted
+    models-token: ${{ secrets.GH_MODELS_TOKEN }}
+    
     # Git ref to compare against
     base-ref: origin/main
+    
+    # Force verification even when thresholds are not met
+    force: false
     
     # Block PR merge if FAIL
     block-on-fail: true
@@ -247,11 +254,13 @@ retry:
 **Auto-verify when:**
 - ≥3 files changed
 - ANY file matches: `*auth*`, `*secret*`, `*permission*`, `Dockerfile`, `*.env*`
-- User explicitly requests verification
+- You explicitly force verification with `force: true` or `bash scripts/verify.sh <base-ref> --force`
 
 **Skip for:**
 - Formatting-only changes
 - `.gitignore` changes
+
+When thresholds are not met, the action exits successfully and reports `SKIP` in its action output/comment.
 
 ---
 
@@ -294,6 +303,8 @@ permissions:
 **Verify GitHub Models is enabled:**
 - Go to https://github.com/marketplace?type=models
 - Confirm you can access models (free tier available)
+
+If your repository or organization requires a dedicated token for model access, pass `models-token` as described in `GITHUB_MODELS_SETUP.md`.
 
 ---
 

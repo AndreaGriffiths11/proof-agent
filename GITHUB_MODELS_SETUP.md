@@ -1,28 +1,8 @@
 # GitHub Models Access Setup
 
-Proof Agent requires GitHub Models API access to run adversarial verification. Due to permission restrictions, you need to create a Personal Access Token (PAT) with `models:read` scope.
+Proof Agent uses GitHub Models by default. In many repositories, the built-in `secrets.GITHUB_TOKEN` works as long as the workflow requests `models: read`.
 
-## Step 1: Create Personal Access Token
-
-1. Go to **GitHub Settings > Personal Access Tokens > Fine-grained tokens**
-2. Click **Generate new token**
-3. Configure the token:
-   - **Repository access**: Select specific repository (e.g., `your-org/your-repo`)
-   - **Permissions**:
-     - `Contents`: Read
-     - `Pull requests`: Write  
-     - `Models`: Read — **This is critical for GitHub Models API**
-4. **Generate token** and copy it
-
-## Step 2: Add Token as Repository Secret
-
-1. Go to your repository **Settings > Secrets and variables > Actions**
-2. Click **New repository secret**
-3. Name: `GH_MODELS_TOKEN`
-4. Value: Paste your PAT from Step 1
-5. Click **Add secret**
-
-## Step 3: Update Workflow
+## Default setup
 
 ```yaml
 name: Proof Agent Verification
@@ -34,6 +14,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  models: read
 
 jobs:
   verify:
@@ -42,21 +23,42 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Verify PR with Proof Agent
         uses: AndreaGriffiths11/proof-agent@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          models-token: ${{ secrets.GH_MODELS_TOKEN }}  # ← Add this line
 ```
 
-## Why This Is Needed
+## Optional fallback: dedicated models token
 
-The default `secrets.GITHUB_TOKEN` doesn't include `models:read` scope, even when declared in workflow permissions. GitHub Models requires explicit `models:read` permission via a dedicated PAT.
+If your repository or organization does not allow GitHub Models access through the default workflow token, Proof Agent also supports a separate `models-token` input.
+
+### 1. Create a token with repository access and `Models: Read`
+
+1. Go to **GitHub Settings > Personal Access Tokens**
+2. Create a token that can read the target repository and access GitHub Models
+3. Copy the token value
+
+### 2. Add it as a repository secret
+
+1. Go to **Settings > Secrets and variables > Actions**
+2. Create a secret named `GH_MODELS_TOKEN`
+
+### 3. Pass it to the action
+
+```yaml
+- name: Verify PR with Proof Agent
+  uses: AndreaGriffiths11/proof-agent@main
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    models-token: ${{ secrets.GH_MODELS_TOKEN }}
+```
 
 ## Troubleshooting
 
-If you get 403 Forbidden errors:
-1. Verify your PAT has `models:read` permission
-2. Check that the PAT has access to your specific repository
-3. Ensure the secret is named correctly in your workflow
+If you get model access errors:
+
+1. Confirm the workflow includes `models: read`
+2. Confirm GitHub Models is enabled for your account/org
+3. If the built-in token still fails, provide `models-token`
