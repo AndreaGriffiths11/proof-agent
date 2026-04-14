@@ -96,17 +96,9 @@ def build_verification_prompt(request: VerificationRequest) -> str:
 - **Code:** `problematic code snippet`
 - **Severity:** CRITICAL/HIGH/MEDIUM
 
-**Conclude with exactly:**
-### PASS
-No security issues found.
+**Conclude with exactly ONE of:** ### PASS, ### FAIL, or ### PARTIAL
 
-### FAIL
-Critical issues found. DO NOT MERGE.
-
-### PARTIAL
-Could not verify completely.
-
-**Review the actual diff. Be specific. Cite exact code.**"""
+**Review the actual diff. Be specific. Cite exact code. The author CANNOT verify their own work. Default to FAIL if you find ANY critical security issue.**"""
 
 
 def parse_verdict(response: str) -> VerificationResult:
