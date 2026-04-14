@@ -150,7 +150,7 @@ jobs:
 
 **Supported providers:** Anthropic, Azure OpenAI, OpenAI-compatible endpoints (OpenAI, Ollama, vLLM, etc.).
 
-**Cost optimization:** Use different models for worker vs verifier with `PROOF_AGENT_VERIFIER_MODEL`.
+**Cost optimization:** Use a different model for the verifier step with `PROOF_AGENT_VERIFIER_MODEL`.
 
 ---
 

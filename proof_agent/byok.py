@@ -1,6 +1,6 @@
 """
 BYOK (Bring Your Own Key) client for Proof Agent
-Supports multiple model providers: OpenAI, Anthropic, Azure, Foundry
+Supports multiple model providers: OpenAI, Anthropic, Azure
 """
 
 import os
