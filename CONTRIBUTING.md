@@ -120,6 +120,7 @@ Examples of useful contributions:
 ## Questions?
 
 - Open a [GitHub Discussion](https://github.com/AndreaGriffiths11/proof-agent/discussions)
+- Ping [@acolombiadev](https://x.com/acolombiadev) on X/Twitter
 
 ---
 
