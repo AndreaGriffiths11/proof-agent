@@ -32,9 +32,8 @@ The verifier has no access to the worker's self-assessment. It must verify with 
 - **FAIL** — Issues found. Report specifics. Retry up to 3 times if auto-fixable.
 - **PARTIAL** — Some checks passed, others couldn't be verified
 
----
-
-## What It Checks
+<details>
+<summary><strong>What It Checks</strong></summary>
 
 - **Security Vulnerabilities** — SQL injection, hardcoded secrets, authentication bypasses, XSS/CSRF
 - **Correctness** — Does the code match the stated purpose? Logical errors?
@@ -44,6 +43,8 @@ The verifier has no access to the worker's self-assessment. It must verify with 
 **Review method:** Static code review (reads diff output, does NOT execute code or run tests)
 
 **Rule:** Verifier must cite specific files, line numbers, and code snippets in verdict.
+
+</details>
 
 ---
 
@@ -91,7 +92,8 @@ That's it. Every PR gets automatic verification.
 
 ## 🔑 Custom Model Providers (BYOK)
 
-Use your own model providers for verification.
+<details>
+<summary>Use your own model providers for verification.</summary>
 
 ### Anthropic Claude
 ```yaml
@@ -155,6 +157,8 @@ jobs:
 
 **⚠️ Prompt Optimization:** Proof Agent works with smaller models when prompts are concise and task-focused. **Minimum 1B parameters** for basic detection, **2B+ parameters recommended** for reliable production use. Very complex instructions may reduce effectiveness regardless of model size.
 
+</details>
+
 ---
 
 ### OpenClaw Skill (Interactive)
@@ -188,7 +192,8 @@ cat verification_prompt.txt | your-llm-cli
 
 ## Configuration
 
-### Action Inputs
+<details>
+<summary><strong>Action Inputs</strong></summary>
 
 ```yaml
 - uses: AndreaGriffiths11/proof-agent@main
@@ -224,9 +229,10 @@ cat verification_prompt.txt | your-llm-cli
 - `summary` — Verdict + key findings only
 - `full` — Everything visible (truncates at max-comment-length)
 
----
+</details>
 
-### Proof Agent Config (proof-agent.yaml)
+<details>
+<summary><strong>Proof Agent Config (proof-agent.yaml)</strong></summary>
 
 Customize thresholds and patterns:
 
@@ -247,9 +253,10 @@ retry:
   escalate_on_max: true
 ```
 
----
+</details>
 
-## When Verification Triggers
+<details>
+<summary><strong>When Verification Triggers</strong></summary>
 
 **Auto-verify when:**
 - ≥3 files changed
@@ -262,11 +269,14 @@ retry:
 
 When thresholds are not met, the action exits successfully and reports `SKIP` in its action output/comment.
 
+</details>
+
 ---
 
 ## Example Workflow
 
-**Scenario:** AI agent writes authentication code
+<details>
+<summary><strong>Scenario: AI agent writes authentication code</strong></summary>
 
 1. **Worker agent** generates `src/auth.py`, `tests/test_auth.py`, updates `requirements.txt`
 2. **Proof Agent** detects: 3+ files changed + `*auth*` pattern → triggers verification
@@ -279,18 +289,21 @@ When thresholds are not met, the action exits successfully and reports `SKIP` in
    - Checks `tests/test_auth.py` for edge case coverage
    - Reviews `requirements.txt` for suspicious dependencies
 5. **Verifier finds:**
-   - Hardcoded API key in `src/auth.py:42` (`API_KEY = "sk-1234...")
+   - Hardcoded API key in `src/auth.py:42` (`API_KEY = "sk-1234..."`)
    - SQL query uses string interpolation (injection risk)
    - Missing input validation on username parameter
 6. **Verdict:** **FAIL** — Security issues (hardcoded secret + SQL injection + missing validation)
 7. **Proof Agent** posts comment, blocks merge
 8. **Developer fixes issues** → pushes new commit → **re-verifies** → **PASS**
 
+</details>
+
 ---
 
 ## Troubleshooting
 
-### Action fails with "No access to model"
+<details>
+<summary><strong>Action fails with "No access to model"</strong></summary>
 
 **Check workflow permissions:**
 ```yaml
@@ -306,9 +319,10 @@ permissions:
 
 If your repository or organization requires a dedicated token for model access, pass `models-token` as described in `GITHUB_MODELS_SETUP.md`.
 
----
+</details>
 
-### PR comment not posted (403/404 error)
+<details>
+<summary><strong>PR comment not posted (403/404 error)</strong></summary>
 
 **Check workflow permissions:**
 ```yaml
@@ -320,9 +334,10 @@ permissions:
 
 For private repos, use `secrets.GITHUB_TOKEN` (already has correct permissions).
 
----
+</details>
 
-### SKIP on every PR
+<details>
+<summary><strong>SKIP on every PR</strong></summary>
 
 Proof Agent skips if <3 files changed AND no sensitive files detected.
 
@@ -330,9 +345,14 @@ Proof Agent skips if <3 files changed AND no sensitive files detected.
 - Change 3+ files, OR
 - Touch a sensitive file: `*auth*`, `*secret*`, `Dockerfile`, `*.env*`
 
+</details>
+
 ---
 
 ## Why Adversarial Verification?
+
+<details>
+<summary><strong>Single-agent limitations vs. Adversarial separation</strong></summary>
 
 **Single-agent limitations:**
 - Same model that made the mistake will rationalize it
@@ -348,6 +368,8 @@ Proof Agent skips if <3 files changed AND no sensitive files detected.
 - Code review (separate developer)
 - Security audit (external team)
 - Peer review (different researcher)
+
+</details>
 
 ---
 
