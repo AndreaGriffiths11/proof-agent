@@ -12,7 +12,7 @@ Adversarial verification for AI-generated work. The worker and verifier are alwa
 
 - **Python 3.9+**
 - **GitHub Actions** — Zero-config CI/CD integration
-- **GitHub Models API** — GPT-4o, Claude, Gemini (for verification)
+- **GitHub Copilot SDK** — Independent verifier runtime
 - **Static analysis** — Reviews git diffs, does NOT execute code
 
 ## Architecture
@@ -62,8 +62,8 @@ Verdict: PASS / FAIL / PARTIAL
 ## Dependencies
 
 - GitHub Actions (`actions/checkout@v4`, `actions/setup-python@v5`)
-- GitHub Models API (requires `models: read` permission)
-- Python packages: `PyGithub`, `openai` (for GitHub Models)
+- GitHub Copilot SDK (requires `copilot-requests: write` permission in Actions)
+- Python packages: `github-copilot-sdk`, `pyyaml`, `requests`
 
 ## GitHub Action Usage
 
@@ -77,10 +77,10 @@ Verdict: PASS / FAIL / PARTIAL
 ## Files
 
 - `proof_agent/verifier.py` — Core verification logic
+- `proof_agent/copilot_sdk.py` — GitHub Copilot SDK verifier
 - `entrypoint.sh` — GitHub Action entry point
 - `action.yml` — Action metadata
 - `SKILL.md` — OpenClaw skill integration guide
-- `GITHUB_MODELS_SETUP.md` — GitHub Models API setup
 
 ## What NOT to Do
 

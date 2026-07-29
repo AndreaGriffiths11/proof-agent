@@ -65,7 +65,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  models: read  # Required for GitHub Models API
+  copilot-requests: write
 
 jobs:
   verify:
@@ -86,7 +86,7 @@ jobs:
 
 That's it. Every PR gets automatic verification.
 
-**Uses GitHub Models API (free tier).** No extra provider API keys are required for the default GitHub Models path. If your environment needs a separate token for model access, you can also pass the optional `models-token` input.
+**Uses the GitHub Copilot SDK.** No GitHub Models token is required. In GitHub Actions, the built-in `GITHUB_TOKEN` needs `copilot-requests: write`, and the organization must allow Copilot CLI usage from Actions.
 
 ---
 
@@ -201,9 +201,9 @@ cat verification_prompt.txt | your-llm-cli
     # GitHub token (use built-in GITHUB_TOKEN)
     github-token: ${{ secrets.GITHUB_TOKEN }}
     
-    # Optional token used only for GitHub Models access
+    # Optional token used for Copilot SDK requests
     # Falls back to github-token when omitted
-    models-token: ${{ secrets.GH_MODELS_TOKEN }}
+    copilot-token: ${{ secrets.COPILOT_TOKEN }}
     
     # Git ref to compare against
     base-ref: origin/main
@@ -303,21 +303,19 @@ When thresholds are not met, the action exits successfully and reports `SKIP` in
 ## Troubleshooting
 
 <details>
-<summary><strong>Action fails with "No access to model"</strong></summary>
+<summary><strong>Action fails with Copilot SDK authentication or access errors</strong></summary>
 
 **Check workflow permissions:**
 ```yaml
 permissions:
   contents: read
   pull-requests: write
-  models: read  # ← Required for GitHub Models API
+  copilot-requests: write  # ← Required for Copilot SDK requests
 ```
 
-**Verify GitHub Models is enabled:**
-- Go to https://github.com/marketplace?type=models
-- Confirm you can access models (free tier available)
-
-If your repository or organization requires a dedicated token for model access, pass `models-token` as described in `GITHUB_MODELS_SETUP.md`.
+**Verify Copilot requests are enabled:**
+- The organization must allow Copilot CLI usage from GitHub Actions.
+- If your repository or organization requires a dedicated token, pass `copilot-token`.
 
 </details>
 
@@ -329,7 +327,7 @@ If your repository or organization requires a dedicated token for model access, 
 permissions:
   pull-requests: write  # ← Required for posting comments
   contents: read
-  models: read
+  copilot-requests: write
 ```
 
 For private repos, use `secrets.GITHUB_TOKEN` (already has correct permissions).
