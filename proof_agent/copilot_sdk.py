@@ -31,11 +31,32 @@ def _deny_tool_use(_request, _invocation):
     )
 
 
+def _runtime_env() -> dict[str, str]:
+    """Build the environment passed to the Copilot SDK runtime."""
+    env = dict(os.environ)
+    token = (
+        env.get("COPILOT_GITHUB_TOKEN")
+        or env.get("GITHUB_TOKEN")
+        or env.get("GH_TOKEN")
+    )
+    if not token:
+        raise RuntimeError(
+            "COPILOT_GITHUB_TOKEN, GITHUB_TOKEN, or GH_TOKEN is required for "
+            "Copilot SDK verification"
+        )
+    env["COPILOT_GITHUB_TOKEN"] = token
+    return env
+
+
 async def verify(prompt: str) -> str:
     """Send a verification prompt through the GitHub Copilot SDK."""
-    from copilot import CopilotClient
+    from copilot import CopilotClient, RuntimeConnection
 
-    client = CopilotClient(use_logged_in_user=False)
+    client = CopilotClient(
+        connection=RuntimeConnection.for_stdio(),
+        env=_runtime_env(),
+        use_logged_in_user=False,
+    )
     await client.start()
     try:
         session = await client.create_session(
