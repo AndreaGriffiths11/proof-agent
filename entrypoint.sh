@@ -85,47 +85,25 @@ if [ -n "$PROOF_AGENT_PROVIDER_BASE_URL" ]; then
         VERDICT=$(printf '%b' "$VERDICT")
     fi
 else
-    # Original GitHub Models path
-    # Install gh-models extension if not already installed
-    if ! gh extension list 2>/dev/null | grep -q "gh-models"; then
-        echo "Installing gh-models extension..."
-        gh extension install https://github.com/github/gh-models 2>&1 || {
-            echo "⚠️ Failed to install gh-models extension"
-            echo "Falling back to manual review mode"
-            VERDICT="### PARTIAL\ngh-models extension installation failed. Manual review required.\nSee verification_prompt.txt for the full prompt."
-            VERDICT=$(printf '%b' "$VERDICT")
-            echo "$VERDICT" > verdict.txt
-            echo "$VERDICT"
-            echo ""
-            VERDICT_TYPE="PARTIAL"
-            echo "⚠️ Verification: PARTIAL"
-            
-            # Skip to end (after verdict parsing)
-            MODELS_FAILED=true
-        }
-    fi
-
-    if [ "$MODELS_FAILED" != "true" ]; then
-        # Use GitHub Models via gh models run
-        COPILOT_MODEL="${GH_COPILOT_MODEL:-meta/llama-3.3-70b-instruct}"
-        
-        echo "📝 Sending verification prompt via GitHub Models ($COPILOT_MODEL)..."
+    # Default GitHub Copilot SDK path. GitHub Models/gh-models is deprecated.
+    COPILOT_MODEL="${PROOF_AGENT_COPILOT_MODEL:-${PROOF_AGENT_MODEL:-auto}}"
+    
+    echo "📝 Sending verification prompt via GitHub Copilot SDK ($COPILOT_MODEL)..."
+    echo ""
+    
+    COPILOT_EXIT=0
+    VERDICT=$(echo "$PROMPT_CONTENT" | proof-agent-verify-copilot 2>&1) || COPILOT_EXIT=$?
+    
+    if [ "$COPILOT_EXIT" -ne 0 ]; then
+        echo "⚠️ Copilot SDK verification failed (exit $COPILOT_EXIT)"
+        echo "Error output:"
+        echo "$VERDICT"
         echo ""
-        
-        COPILOT_EXIT=0
-        VERDICT=$(echo "$PROMPT_CONTENT" | gh models run "$COPILOT_MODEL" 2>&1) || COPILOT_EXIT=$?
-        
-        if [ "$COPILOT_EXIT" -ne 0 ]; then
-            echo "⚠️ gh models run failed (exit $COPILOT_EXIT)"
-            echo "Error output:"
-            echo "$VERDICT"
-            echo ""
-            echo "Falling back to manual review mode — prompt saved to verification_prompt.txt"
-            echo "Review the prompt manually and assign a verdict."
-            echo ""
-            VERDICT="### PARTIAL\ngh models run failed (exit $COPILOT_EXIT).\nError: $VERDICT\n\nSee verification_prompt.txt for the full prompt."
-            VERDICT=$(printf '%b' "$VERDICT")
-        fi
+        echo "Falling back to manual review mode — prompt saved to verification_prompt.txt"
+        echo "Review the prompt manually and assign a verdict."
+        echo ""
+        VERDICT="### PARTIAL\nCopilot SDK verification failed (exit $COPILOT_EXIT).\nError: $VERDICT\n\nSee verification_prompt.txt for the full prompt."
+        VERDICT=$(printf '%b' "$VERDICT")
     fi
 fi
 
