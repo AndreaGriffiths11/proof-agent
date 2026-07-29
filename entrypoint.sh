@@ -31,15 +31,17 @@ if echo "$PROMPT_CONTENT" | grep -q "^SKIP:"; then
     # Post as PR comment if requested
     if [ "$INPUT_POST_COMMENT" = "true" ] && [ -n "$PR_NUMBER" ]; then
         echo "💬 Posting skip notice as PR comment..."
+        SKIP_REASON=$(printf "%s\n" "$VERDICT" | sed -n '1s/^SKIP:[[:space:]]*//p')
         
         COMMENT_BODY="## 🤖 Proof Agent Verification
 
 ⏭️ **SKIPPED**
 
-$VERDICT
+> $SKIP_REASON
 
----
-*Proof Agent requires ≥3 files changed or sensitive files to trigger verification. Use \`--force\` to verify anyway.*
+Proof Agent runs when at least 3 files changed or a sensitive file is touched.
+
+To force verification, set \`force: true\` in the action or run \`--force\` from the CLI.
 
 [🔗 View logs]($RUN_URL)"
         
