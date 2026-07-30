@@ -31,9 +31,9 @@ def _deny_tool_use(_request, _invocation):
     )
 
 
-def _runtime_env() -> dict[str, str]:
-    """Build the environment passed to the Copilot SDK runtime."""
-    env = dict(os.environ)
+def _github_token(env: dict[str, str] | None = None) -> str:
+    """Return the token used for Copilot SDK verification."""
+    env = env or dict(os.environ)
     token = (
         env.get("COPILOT_GITHUB_TOKEN")
         or env.get("GITHUB_TOKEN")
@@ -44,6 +44,13 @@ def _runtime_env() -> dict[str, str]:
             "COPILOT_GITHUB_TOKEN, GITHUB_TOKEN, or GH_TOKEN is required for "
             "Copilot SDK verification"
         )
+    return token
+
+
+def _runtime_env() -> dict[str, str]:
+    """Build the environment passed to the Copilot SDK runtime."""
+    env = dict(os.environ)
+    token = _github_token(env)
     env["COPILOT_GITHUB_TOKEN"] = token
     return env
 
@@ -62,6 +69,7 @@ async def verify(prompt: str) -> str:
         session = await client.create_session(
             on_permission_request=_deny_tool_use,
             model=_model(),
+            github_token=_github_token(),
         )
         try:
             response = await session.send_and_wait(f"{SYSTEM_PROMPT}\n\n{prompt}")
