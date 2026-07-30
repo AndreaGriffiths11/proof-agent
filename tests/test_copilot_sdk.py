@@ -39,6 +39,14 @@ def test_runtime_env_prefers_copilot_token(monkeypatch):
     assert env["COPILOT_GITHUB_TOKEN"] == "copilot-token"
 
 
+def test_github_token_uses_same_precedence(monkeypatch):
+    monkeypatch.setenv("COPILOT_GITHUB_TOKEN", "copilot-token")
+    monkeypatch.setenv("GITHUB_TOKEN", "github-token")
+    monkeypatch.setenv("GH_TOKEN", "gh-token")
+
+    assert copilot_sdk._github_token() == "copilot-token"
+
+
 def test_runtime_env_promotes_github_token(monkeypatch):
     monkeypatch.delenv("COPILOT_GITHUB_TOKEN", raising=False)
     monkeypatch.setenv("GITHUB_TOKEN", "github-token")
