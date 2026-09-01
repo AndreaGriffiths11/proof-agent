@@ -189,6 +189,9 @@ copilot login
 bash scripts/verify.sh [base-ref] | proof-agent-verify-copilot
 ```
 
+When the threshold is not met, the verifier prints the `SKIP:` notice without
+contacting Copilot.
+
 ---
 
 ## Configuration

@@ -1,5 +1,9 @@
 """Tests for Copilot SDK verification."""
 
+import asyncio
+import sys
+from types import SimpleNamespace
+
 import pytest
 
 from proof_agent import copilot_sdk
@@ -27,6 +31,19 @@ def test_main_requires_prompt(monkeypatch, capsys):
 
     assert exc_info.value.code == 1
     assert "No verification prompt provided" in capsys.readouterr().err
+
+
+def test_main_short_circuits_skip(monkeypatch, capsys):
+    async def unexpected_verify(_prompt):
+        raise AssertionError("SKIP must not create a Copilot session")
+
+    skip = "SKIP: Threshold not met.\nUse --force to verify anyway."
+    monkeypatch.setattr("sys.stdin", _StringIO(skip))
+    monkeypatch.setattr(copilot_sdk, "verify", unexpected_verify)
+
+    copilot_sdk.main()
+
+    assert capsys.readouterr().out.strip() == skip
 
 
 def test_runtime_env_prefers_copilot_token(monkeypatch):
@@ -109,6 +126,49 @@ def test_cli_login_is_allowed_when_ci_is_false(monkeypatch):
     env = copilot_sdk._runtime_env()
 
     assert copilot_sdk._use_logged_in_user(env) is True
+
+
+@pytest.mark.parametrize(
+    ("token", "use_logged_in_user"),
+    [("github-token", False), (None, True)],
+)
+def test_verify_derives_auth_from_token(monkeypatch, token, use_logged_in_user):
+    clients = []
+
+    class FakeSession:
+        async def send_and_wait(self, _prompt):
+            return SimpleNamespace(data=SimpleNamespace(content="### PASS"))
+
+        async def disconnect(self):
+            pass
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+            self.session_options = None
+            clients.append(self)
+
+        async def start(self):
+            pass
+
+        async def create_session(self, **kwargs):
+            self.session_options = kwargs
+            return FakeSession()
+
+        async def stop(self):
+            pass
+
+    env = {"COPILOT_GITHUB_TOKEN": token} if token else {}
+    copilot_module = SimpleNamespace(
+        CopilotClient=FakeClient,
+        RuntimeConnection=SimpleNamespace(for_stdio=lambda: object()),
+    )
+    monkeypatch.setitem(sys.modules, "copilot", copilot_module)
+    monkeypatch.setattr(copilot_sdk, "_runtime_env", lambda: env)
+
+    assert asyncio.run(copilot_sdk.verify("review")) == "### PASS"
+    assert clients[0].kwargs["use_logged_in_user"] is use_logged_in_user
+    assert clients[0].session_options.get("github_token") == token
 
 
 class _StringIO:

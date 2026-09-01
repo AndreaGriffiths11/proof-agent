@@ -73,11 +73,10 @@ async def verify(prompt: str) -> str:
 
     env = _runtime_env()
     token = _github_token(env)
-    use_logged_in_user = _use_logged_in_user(env)
     client = CopilotClient(
         connection=RuntimeConnection.for_stdio(),
         env=env,
-        use_logged_in_user=use_logged_in_user,
+        use_logged_in_user=token is None,
     )
     await client.start()
     try:
@@ -106,6 +105,9 @@ def main():
     if not prompt:
         print("### PARTIAL\nNo verification prompt provided", file=sys.stderr)
         sys.exit(1)
+    if prompt.startswith("SKIP:"):
+        print(prompt)
+        return
 
     try:
         print(asyncio.run(verify(prompt)))

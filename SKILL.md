@@ -26,6 +26,9 @@ Use the sealed prompt generator and Copilot verifier pipeline:
 bash scripts/verify.sh [base-ref] | proof-agent-verify-copilot
 ```
 
+When the threshold is not met, the verifier prints the `SKIP:` notice without
+contacting Copilot.
+
 The worker must not replace this pipeline with a hand-written verification
 prompt or share its self-assessment with the verifier.
 
