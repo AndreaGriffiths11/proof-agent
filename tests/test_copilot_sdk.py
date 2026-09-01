@@ -99,6 +99,18 @@ def test_cli_login_is_default_outside_ci(monkeypatch):
     assert copilot_sdk._use_logged_in_user(env) is True
 
 
+def test_cli_login_is_allowed_when_ci_is_false(monkeypatch):
+    monkeypatch.delenv("COPILOT_GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.delenv("PROOF_AGENT_USE_CLI_LOGIN", raising=False)
+    monkeypatch.setenv("CI", "false")
+
+    env = copilot_sdk._runtime_env()
+
+    assert copilot_sdk._use_logged_in_user(env) is True
+
+
 class _StringIO:
     def __init__(self, data):
         self._data = data

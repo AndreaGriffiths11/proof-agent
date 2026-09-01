@@ -45,7 +45,10 @@ def _use_logged_in_user(env: dict[str, str]) -> bool:
     """Select explicit token auth or an interactive Copilot CLI login."""
     if _github_token(env):
         return False
-    if env.get("PROOF_AGENT_USE_CLI_LOGIN") == "1" or "CI" not in env:
+    if (
+        env.get("PROOF_AGENT_USE_CLI_LOGIN") == "1"
+        or env.get("CI", "").lower() != "true"
+    ):
         return True
     raise RuntimeError(
         "Copilot SDK verification requires COPILOT_GITHUB_TOKEN, GITHUB_TOKEN, "
