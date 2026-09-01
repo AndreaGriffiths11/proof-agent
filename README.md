@@ -181,11 +181,12 @@ The agent spawns a verifier subagent and runs checks.
 git clone https://github.com/AndreaGriffiths11/proof-agent.git
 cd proof-agent
 
-# Generate verification prompt
-bash scripts/verify.sh > verification_prompt.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
 
-# Send to your LLM
-cat verification_prompt.txt | your-llm-cli
+copilot login
+bash scripts/verify.sh [base-ref] | proof-agent-verify-copilot
 ```
 
 ---

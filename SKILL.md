@@ -20,59 +20,14 @@ Skip verification for:
 
 ## How to Verify
 
-1. **Spawn an independent verifier subagent** — the worker CANNOT verify its own work
-2. Give the verifier ONLY: the original request, files changed, and approach taken
-3. Do NOT share the worker's self-assessment
-4. Verification in this repository is primarily **static review of the supplied git diff**
-5. If no subagent ran (manual changes or user says "verify this"), use `git diff` output as the approach summary
+Use the sealed prompt generator and Copilot verifier pipeline:
 
-### Verification Prompt
-
-Use this prompt when spawning the verifier subagent:
-
+```bash
+bash scripts/verify.sh [base-ref] | proof-agent-verify-copilot
 ```
-VERIFICATION REQUEST
 
-## Original Request
-{what was asked}
-
-## Files Changed
-{list of files}
-
-## Approach Taken
-{what the worker did — or git diff summary if no subagent ran}
-
-## Your Job
-
-You are an independent verifier. The worker who made these changes CANNOT verify their own work — only you can assign a verdict.
-
-### Review Checklist
-1. Correctness: Does the code actually do what was requested?
-2. Bugs & Edge Cases: Regressions, unhandled errors, missed cases?
-3. Security: Vulnerabilities, exposed secrets, permission issues?
-4. Facts: Are any claims, version numbers, or URLs in the diff verifiable?
-5. Evidence: Cite the exact diff lines or snippets that support the verdict
-
-### Rules
-- Review the actual diff and changed file list
-- Cite exact files, lines, and snippets for every issue you report
-- Do NOT take the worker's word for anything
-- Do NOT claim builds, tests, or runtime behavior passed unless you independently verified them
-- If evidence is incomplete, use PARTIAL instead of guessing
-
-## Verdict
-
-Assign EXACTLY ONE verdict as a markdown heading (### PASS, ### FAIL, or ### PARTIAL):
-
-### PASS
-All checks passed. Every claim backed by specific evidence from the review.
-
-### FAIL
-Issues found. List each as a bullet (- file, line, what's wrong, severity: critical/major/minor).
-
-### PARTIAL
-Some passed, some unverifiable. List both with evidence.
-```
+The worker must not replace this pipeline with a hand-written verification
+prompt or share its self-assessment with the verifier.
 
 ## Verdicts
 
