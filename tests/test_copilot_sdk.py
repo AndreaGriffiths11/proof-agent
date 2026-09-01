@@ -70,6 +70,16 @@ def test_github_token_empty_mapping_ignores_ambient_env(monkeypatch):
     assert copilot_sdk._github_token({}) is None
 
 
+def test_github_token_treats_empty_values_as_absent():
+    env = {
+        "COPILOT_GITHUB_TOKEN": "",
+        "GITHUB_TOKEN": "",
+        "GH_TOKEN": "",
+    }
+
+    assert copilot_sdk._github_token(env) is None
+
+
 def test_runtime_env_promotes_github_token(monkeypatch):
     monkeypatch.delenv("COPILOT_GITHUB_TOKEN", raising=False)
     monkeypatch.setenv("GITHUB_TOKEN", "github-token")

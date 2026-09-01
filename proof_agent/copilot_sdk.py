@@ -38,7 +38,7 @@ def _github_token(env: dict[str, str] | None = None) -> str | None:
         env.get("COPILOT_GITHUB_TOKEN")
         or env.get("GITHUB_TOKEN")
         or env.get("GH_TOKEN")
-    )
+    ) or None
 
 
 def _use_logged_in_user(env: dict[str, str]) -> bool:
