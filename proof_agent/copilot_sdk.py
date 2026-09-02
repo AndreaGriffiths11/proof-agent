@@ -66,7 +66,7 @@ def _runtime_env() -> dict[str, str]:
     token = _github_token(env)
     if token:
         env["COPILOT_GITHUB_TOKEN"] = token
-    # Enforce tokenless-CI opt-in; verify() derives the auth mode afterward.
+    # Intentional discarded return: this raises for tokenless CI without opt-in.
     _use_logged_in_user(env)
     return env
 

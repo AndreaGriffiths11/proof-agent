@@ -192,9 +192,10 @@ bash scripts/verify.sh [base-ref] | proof-agent-verify-copilot
 When the threshold is not met, the verifier prints the `SKIP:` notice without
 contacting Copilot.
 
-GitHub Actions authenticates with `GITHUB_TOKEN` or `COPILOT_GITHUB_TOKEN` and
-fails closed when neither is set. To explicitly use an existing Copilot CLI
-login in CI, set `PROOF_AGENT_USE_CLI_LOGIN=1`.
+GitHub Actions normally authenticates with `GITHUB_TOKEN` or
+`COPILOT_GITHUB_TOKEN`. CI without a supported token fails closed; to
+explicitly use an existing Copilot CLI login, set
+`PROOF_AGENT_USE_CLI_LOGIN=1`.
 
 ---
 
