@@ -90,6 +90,19 @@ def test_runtime_env_promotes_github_token(monkeypatch):
     assert env["COPILOT_GITHUB_TOKEN"] == "github-token"
 
 
+def test_runtime_env_removes_empty_token_for_cli_login(monkeypatch):
+    monkeypatch.setenv("COPILOT_GITHUB_TOKEN", "")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.delenv("PROOF_AGENT_USE_CLI_LOGIN", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+
+    env = copilot_sdk._runtime_env()
+
+    assert "COPILOT_GITHUB_TOKEN" not in env
+    assert copilot_sdk._use_logged_in_user(env) is True
+
+
 def test_runtime_env_rejects_cli_login_in_ci(monkeypatch):
     monkeypatch.delenv("COPILOT_GITHUB_TOKEN", raising=False)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)

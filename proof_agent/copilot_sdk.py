@@ -60,6 +60,9 @@ def _use_logged_in_user(env: dict[str, str]) -> bool:
 def _runtime_env() -> dict[str, str]:
     """Build the environment passed to the Copilot SDK runtime."""
     env = dict(os.environ)
+    for name in ("COPILOT_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"):
+        if not env.get(name):
+            env.pop(name, None)
     token = _github_token(env)
     if token:
         env["COPILOT_GITHUB_TOKEN"] = token
