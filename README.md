@@ -181,12 +181,21 @@ The agent spawns a verifier subagent and runs checks.
 git clone https://github.com/AndreaGriffiths11/proof-agent.git
 cd proof-agent
 
-# Generate verification prompt
-bash scripts/verify.sh > verification_prompt.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
 
-# Send to your LLM
-cat verification_prompt.txt | your-llm-cli
+copilot login
+bash scripts/verify.sh [base-ref] | proof-agent-verify-copilot
 ```
+
+When the threshold is not met, the verifier prints the `SKIP:` notice without
+contacting Copilot.
+
+GitHub Actions normally authenticates with `GITHUB_TOKEN` or
+`COPILOT_GITHUB_TOKEN`. CI without a supported token fails closed; to
+explicitly use an existing Copilot CLI login, set
+`PROOF_AGENT_USE_CLI_LOGIN=1`.
 
 ---
 

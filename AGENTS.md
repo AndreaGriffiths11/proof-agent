@@ -70,8 +70,10 @@ Verdict: PASS / FAIL / PARTIAL
 ```yaml
 - uses: AndreaGriffiths11/proof-agent@main
   with:
-    model: 'gpt-4o'  # or 'claude-3.5-sonnet', 'gemini-1.5-pro'
-    max-retries: 3
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    base-ref: origin/main
+    block-on-fail: true
+    post-comment: true
 ```
 
 ## Files
