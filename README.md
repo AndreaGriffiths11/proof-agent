@@ -90,10 +90,6 @@ That's it. Every PR gets automatic verification.
 
 ---
 
-### Grok Bot
-
-[Grok Bot](https://x.ai/bot/D6Bv_HwN2ATIghQLFoDaz) coordinates the sealed `scripts/verify.sh | proof-agent-verify-copilot` pipeline and reports Copilot's PASS, FAIL, or PARTIAL verdict. It does not judge code itself.
-
 ## 🔑 Custom Model Providers (BYOK)
 
 <details>
@@ -164,6 +160,10 @@ jobs:
 </details>
 
 ---
+
+### Grok Bot
+
+[Grok Bot](https://x.ai/bot/D6Bv_HwN2ATIghQLFoDaz) coordinates the sealed `scripts/verify.sh | proof-agent-verify-copilot` pipeline and reports Copilot's PASS, FAIL, or PARTIAL verdict. It does not judge code itself.
 
 ### OpenClaw Skill (Interactive)
 
